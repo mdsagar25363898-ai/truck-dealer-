@@ -1,1 +1,101 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Truck Dealer Simulator</title>
+<link rel="stylesheet" href="style.css">
+</head>
 
+<body>
+
+<div class="app">
+
+<header>
+  <div>
+    <h1>🚛 Truck Dealer</h1>
+    <small>Build your trucking empire</small>
+  </div>
+  <div class="cash">💰 ৳<span id="money">0</span></div>
+</header>
+
+<nav>
+  <button class="tab active" data-page="showroom">🏪 Showroom</button>
+  <button class="tab" data-page="garage">🚛 Garage</button>
+  <button class="tab" data-page="missions">📦 Missions</button>
+</nav>
+
+<main>
+
+<section id="showroom" class="page active">
+
+  <div class="hero">
+    <div>
+      <h2>Truck Showroom</h2>
+      <p>নতুন ট্রাক কিনে ব্যবসা বড় করুন।</p>
+    </div>
+
+    <div class="badge">
+      ⭐ Level <b id="level">1</b>
+    </div>
+  </div>
+
+  <div id="truckList" class="grid"></div>
+
+</section>
+
+
+<section id="garage" class="page">
+
+  <div class="hero">
+    <div>
+      <h2>My Garage</h2>
+      <p>আপনার ট্রাক পরিচালনা করুন।</p>
+    </div>
+
+    <div class="badge">
+      🚛 <b id="truckCount">0</b>
+    </div>
+  </div>
+
+  <div id="garageList"></div>
+
+</section>
+
+
+<section id="missions" class="page">
+
+  <div class="hero">
+    <div>
+      <h2>Delivery Missions</h2>
+      <p>মাল পৌঁছে টাকা আয় করুন।</p>
+    </div>
+
+    <div class="badge">
+      📦 <b id="deliveries">0</b>
+    </div>
+  </div>
+
+  <div id="missionList"></div>
+
+</section>
+
+</main>
+
+
+<footer>
+
+  💰 ৳<b id="money2">0</b>
+  &nbsp;
+  ⭐ Lv.<b id="level2">1</b>
+
+  <button id="reset">Reset</button>
+
+</footer>
+
+</div>
+
+<script src="game.js"></script>
+
+</body>
+</html>
