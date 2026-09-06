@@ -1,49 +1,142 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport"
-content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-
-<title>Truck Dealer</title>
-
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Truck Dealership</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
 <div id="game">
 
-  <canvas id="canvas"></canvas>
+  <canvas id="gameCanvas"></canvas>
 
-  <div id="hud">
-    <div>💰 ৳<b id="money">380000</b></div>
-    <div>⛽ <b id="fuel">100</b>%</div>
-    <div>📍 <b id="place">Showroom</b></div>
+  <!-- TOP HUD -->
+  <div class="hud">
+
+    <div class="hudBox">
+      💰 ৳<span id="money">380000</span>
+    </div>
+
+    <div class="hudBox">
+      ⛽ <span id="fuel">100</span>%
+    </div>
+
+    <div class="hudBox">
+      🚛 <span id="truckName">Mini Truck</span>
+    </div>
+
   </div>
 
+  <!-- LOCATION -->
+  <div id="location">
+    🏪 Showroom
+  </div>
+
+  <!-- MESSAGE -->
   <div id="message">
-    🏪 Showroom থেকে শুরু করুন
+    🚛 Showroom থেকে শুরু করুন
   </div>
 
-  <button id="actionBtn">
-    🚚 ট্রাকে উঠুন
+  <!-- ACTION -->
+  <button id="actionBtn" class="action hidden">
+    ACTION
   </button>
 
-  <div id="controls">
+  <!-- DRIVE / WALK -->
+  <button id="modeBtn" class="modeBtn">
+    🚛 DRIVE
+  </button>
 
-    <button class="control up" data-key="up">▲</button>
+  <!-- CONTROLS -->
+  <div class="controls">
 
-    <button class="control left" data-key="left">◀</button>
+    <button class="control up" data-dir="up">▲</button>
 
-    <button class="control down" data-key="down">▼</button>
+    <button class="control left" data-dir="left">◀</button>
 
-    <button class="control right" data-key="right">▶</button>
+    <button class="control down" data-dir="down">▼</button>
+
+    <button class="control right" data-dir="right">▶</button>
 
   </div>
 
-  <div id="mode">
-    🚶 WALK
+  <!-- MARKET PANEL -->
+  <div id="marketPanel" class="panel hidden">
+
+    <div class="panelBox">
+
+      <button class="close" id="closeMarket">✕</button>
+
+      <h2>🚛 USED TRUCK MARKET</h2>
+
+      <p>পুরাতন ট্রাক কিনুন বা নিজের ট্রাক বিক্রি করুন।</p>
+
+      <div class="truckCard">
+        <h3>🚚 Mini Truck</h3>
+        <p>Price: ৳120,000</p>
+        <button onclick="buyTruck('Mini Truck',120000)">
+          BUY
+        </button>
+      </div>
+
+      <div class="truckCard">
+        <h3>🚛 Medium Truck</h3>
+        <p>Price: ৳250,000</p>
+        <button onclick="buyTruck('Medium Truck',250000)">
+          BUY
+        </button>
+      </div>
+
+      <div class="truckCard">
+        <h3>🚛 Heavy Truck</h3>
+        <p>Price: ৳450,000</p>
+        <button onclick="buyTruck('Heavy Truck',450000)">
+          BUY
+        </button>
+      </div>
+
+      <div class="sellBox">
+        <h3>💰 আপনার ট্রাক</h3>
+        <button onclick="sellTruck()">
+          SELL TRUCK
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- GARAGE PANEL -->
+  <div id="garagePanel" class="panel hidden">
+
+    <div class="panelBox">
+
+      <button class="close" id="closeGarage">✕</button>
+
+      <h2>🔧 TRUCK GARAGE</h2>
+
+      <p>আপনার ট্রাকের সার্ভিস ও মেরামত করুন।</p>
+
+      <div class="garageInfo">
+        🚛 <b id="garageTruck">Mini Truck</b>
+        <br><br>
+        ⛽ Fuel: <b id="garageFuel">100%</b>
+      </div>
+
+      <button class="bigBtn" onclick="repairTruck()">
+        🔧 FULL REPAIR — ৳10,000
+      </button>
+
+      <button class="bigBtn" onclick="fillFuel()">
+        ⛽ FULL FUEL — ৳5,000
+      </button>
+
+    </div>
+
   </div>
 
 </div>
