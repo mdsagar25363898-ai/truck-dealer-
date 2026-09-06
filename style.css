@@ -1,297 +1,308 @@
 *{
-  box-sizing:border-box;
-  margin:0;
-  padding:0;
-  -webkit-tap-highlight-color:transparent;
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    -webkit-tap-highlight-color:transparent;
 }
 
-html,body{
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  background:#111;
-  font-family:Arial,sans-serif;
+html,
+body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#111;
+    font-family:Arial,sans-serif;
+    touch-action:none;
 }
 
 #game{
-  position:relative;
-  width:100vw;
-  height:100vh;
-  overflow:hidden;
-  background:#111;
+    position:fixed;
+    inset:0;
+    overflow:hidden;
+    background:#75c9e5;
 }
 
-canvas{
-  position:absolute;
-  left:0;
-  top:0;
-  width:100%;
-  height:100%;
-  display:block;
-  touch-action:none;
+#gameCanvas{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
 }
 
 /* HUD */
 
-.hud{
-  position:absolute;
-  top:12px;
-  left:0;
-  width:100%;
-  display:flex;
-  justify-content:space-around;
-  gap:8px;
-  padding:0 10px;
-  z-index:10;
-  pointer-events:none;
+#hud{
+    position:absolute;
+    top:14px;
+    left:14px;
+    right:14px;
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    gap:8px;
+    pointer-events:none;
 }
 
 .hudBox{
-  background:rgba(0,0,0,.82);
-  color:white;
-  border-radius:14px;
-  padding:12px 14px;
-  font-size:16px;
-  font-weight:bold;
-  min-width:105px;
-  text-align:center;
-  box-shadow:0 3px 10px rgba(0,0,0,.4);
+    padding:11px 15px;
+
+    color:white;
+    background:rgba(0,0,0,.78);
+
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:16px;
+
+    font-size:17px;
+    font-weight:bold;
+
+    box-shadow:0 5px 15px rgba(0,0,0,.3);
+}
+
+.truckHud{
+    max-width:170px;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
 }
 
 /* LOCATION */
 
-#location{
-  position:absolute;
-  top:70px;
-  right:12px;
-  background:rgba(0,0,0,.8);
-  color:white;
-  padding:10px 15px;
-  border-radius:20px;
-  font-weight:bold;
-  z-index:10;
+#locationBox{
+    position:absolute;
+
+    top:78px;
+    right:14px;
+
+    padding:12px 20px;
+
+    color:white;
+    background:rgba(0,0,0,.78);
+
+    border-radius:25px;
+
+    font-size:17px;
+    font-weight:bold;
+
+    box-shadow:0 5px 15px rgba(0,0,0,.3);
 }
 
 /* MESSAGE */
 
 #message{
-  position:absolute;
-  top:70px;
-  left:50%;
-  transform:translateX(-50%);
-  width:65%;
-  max-width:520px;
-  text-align:center;
-  color:white;
-  background:rgba(0,0,0,.72);
-  padding:9px 12px;
-  border-radius:15px;
-  font-weight:bold;
-  z-index:10;
+    position:absolute;
+
+    left:50%;
+    bottom:145px;
+
+    transform:translateX(-50%);
+
+    width:min(90%,520px);
+
+    padding:14px 18px;
+
+    color:white;
+    background:rgba(0,0,0,.72);
+
+    border-radius:18px;
+
+    text-align:center;
+    font-size:17px;
+    font-weight:bold;
+
+    pointer-events:none;
+
+    transition:.2s;
 }
 
 /* ACTION */
 
-.action{
-  position:absolute;
-  left:50%;
-  bottom:145px;
-  transform:translateX(-50%);
-  background:#ffb300;
-  color:#111;
-  border:0;
-  border-radius:16px;
-  padding:16px 25px;
-  font-size:18px;
-  font-weight:bold;
-  z-index:20;
-  box-shadow:0 5px 15px rgba(0,0,0,.4);
+.actionButton{
+    position:absolute;
+
+    right:20px;
+    bottom:145px;
+
+    min-width:145px;
+
+    padding:15px 20px;
+
+    border:0;
+    border-radius:18px;
+
+    color:white;
+    background:#1688ff;
+
+    font-size:17px;
+    font-weight:bold;
+
+    box-shadow:0 6px 18px rgba(0,0,0,.35);
+
+    display:none;
 }
 
-.hidden{
-  display:none!important;
-}
-
-/* MODE */
-
-.modeBtn{
-  position:absolute;
-  right:15px;
-  bottom:25px;
-  z-index:20;
-  border:2px solid white;
-  border-radius:16px;
-  background:rgba(0,0,0,.8);
-  color:white;
-  padding:13px 18px;
-  font-weight:bold;
-  font-size:15px;
+.actionButton:active{
+    transform:scale(.94);
 }
 
 /* CONTROLS */
 
-.controls{
-  position:absolute;
-  left:25px;
-  bottom:22px;
-  width:185px;
-  height:160px;
-  z-index:20;
+#controls{
+    position:absolute;
+
+    left:0;
+    right:0;
+    bottom:18px;
+
+    height:125px;
+
+    pointer-events:none;
 }
 
-.control{
-  position:absolute;
-  width:62px;
-  height:62px;
-  border-radius:18px;
-  border:2px solid white;
-  background:rgba(0,0,0,.78);
-  color:white;
-  font-size:27px;
-  font-weight:bold;
-  box-shadow:0 4px 10px rgba(0,0,0,.4);
+/* D-PAD */
+
+.dpad{
+    position:absolute;
+
+    left:18px;
+    bottom:0;
+
+    width:150px;
+    height:125px;
+
+    pointer-events:auto;
 }
 
-.control:active{
-  transform:scale(.9);
-  background:#333;
+.dpad button{
+    width:50px;
+    height:50px;
+
+    border:2px solid rgba(255,255,255,.9);
+    border-radius:15px;
+
+    background:rgba(0,0,0,.72);
+    color:white;
+
+    font-size:22px;
+    font-weight:bold;
+
+    box-shadow:0 5px 12px rgba(0,0,0,.35);
 }
 
-.up{
-  left:62px;
-  top:0;
+.dpad button:active{
+    background:rgba(30,130,255,.85);
+    transform:scale(.92);
 }
 
-.left{
-  left:0;
-  top:70px;
+#up{
+    display:block;
+    margin:0 auto 5px;
 }
 
-.down{
-  left:62px;
-  top:70px;
+.dpad div{
+    display:flex;
+    justify-content:center;
+    gap:5px;
 }
 
-.right{
-  left:124px;
-  top:70px;
+/* RIGHT BUTTONS */
+
+.gameButtons{
+    position:absolute;
+
+    right:18px;
+    bottom:0;
+
+    display:flex;
+    gap:10px;
+
+    pointer-events:auto;
 }
 
-/* PANELS */
+.gameButtons button{
+    width:58px;
+    height:58px;
 
-.panel{
-  position:absolute;
-  inset:0;
-  z-index:50;
-  background:rgba(0,0,0,.7);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
+    border:2px solid white;
+    border-radius:50%;
+
+    background:rgba(0,0,0,.72);
+
+    color:white;
+    font-size:25px;
+
+    box-shadow:0 5px 12px rgba(0,0,0,.35);
 }
 
-.panelBox{
-  position:relative;
-  width:min(94vw,500px);
-  max-height:90vh;
-  overflow:auto;
-  background:#f5f5f5;
-  border-radius:22px;
-  padding:22px;
-  color:#111;
+.gameButtons button:active{
+    background:rgba(30,130,255,.85);
+    transform:scale(.92);
 }
 
-.panelBox h2{
-  text-align:center;
-  margin-bottom:10px;
+/* SMALL PHONES */
+
+@media(max-width:420px){
+
+    .hudBox{
+        padding:9px 11px;
+        font-size:14px;
+    }
+
+    .truckHud{
+        max-width:120px;
+    }
+
+    #locationBox{
+        top:68px;
+        font-size:14px;
+        padding:10px 14px;
+    }
+
+    #message{
+        bottom:142px;
+        font-size:14px;
+        padding:11px 13px;
+    }
+
+    .actionButton{
+        right:12px;
+        bottom:142px;
+        min-width:125px;
+        padding:12px 15px;
+        font-size:14px;
+    }
+
+    .dpad{
+        left:10px;
+    }
+
+    .gameButtons{
+        right:10px;
+        gap:6px;
+    }
+
+    .gameButtons button{
+        width:52px;
+        height:52px;
+        font-size:21px;
+    }
 }
 
-.panelBox p{
-  text-align:center;
-  margin-bottom:15px;
-}
+/* LANDSCAPE */
 
-.close{
-  position:absolute;
-  right:12px;
-  top:12px;
-  width:38px;
-  height:38px;
-  border:0;
-  border-radius:50%;
-  background:#222;
-  color:white;
-  font-size:20px;
-}
+@media(orientation:landscape){
 
-.truckCard{
-  background:white;
-  border-radius:15px;
-  padding:15px;
-  margin:10px 0;
-  box-shadow:0 2px 8px rgba(0,0,0,.15);
-}
+    #controls{
+        bottom:10px;
+    }
 
-.truckCard button,
-.sellBox button,
-.bigBtn{
-  width:100%;
-  border:0;
-  border-radius:12px;
-  padding:13px;
-  margin-top:8px;
-  background:#168a3a;
-  color:white;
-  font-size:16px;
-  font-weight:bold;
-}
+    #message{
+        bottom:105px;
+    }
 
-.sellBox{
-  background:#fff2cc;
-  padding:15px;
-  border-radius:15px;
-  margin-top:12px;
-}
-
-.sellBox button{
-  background:#c62828;
-}
-
-.garageInfo{
-  background:white;
-  border-radius:15px;
-  padding:20px;
-  text-align:center;
-  margin:15px 0;
-}
-
-.bigBtn{
-  background:#1565c0;
-}
-
-/* MOBILE */
-
-@media(max-width:600px){
-
-  .hudBox{
-    font-size:14px;
-    padding:10px 8px;
-    min-width:90px;
-  }
-
-  #location{
-    top:65px;
-    font-size:13px;
-  }
-
-  #message{
-    top:105px;
-    width:90%;
-    font-size:14px;
-  }
-
-  .action{
-    bottom:180px;
-  }
-
+    .actionButton{
+        bottom:105px;
+    }
 }
