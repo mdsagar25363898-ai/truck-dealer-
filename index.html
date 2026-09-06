@@ -2,12 +2,22 @@
 <html lang="bn">
 <head>
   <meta charset="UTF-8">
+
   <meta name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   <title>Truck Dealer 3D</title>
 
   <link rel="stylesheet" href="style.css">
+
+  <!-- Three.js module mapping -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
 </head>
 
 <body>
@@ -16,7 +26,6 @@
 
   <canvas id="gameCanvas"></canvas>
 
-  <!-- HUD -->
   <div id="hud">
 
     <div class="hudBox">
@@ -41,12 +50,10 @@
     Showroom থেকে বের হয়ে আসুন
   </div>
 
-  <!-- Interaction -->
   <button id="actionButton" class="actionButton">
     ✋ INTERACT
   </button>
 
-  <!-- Mobile controls -->
   <div id="controls">
 
     <div class="dpad">
