@@ -1,1949 +1,734 @@
-const canvas = document.getElementById("canvas");
+const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+
+const mapImage = new Image();
+mapImage.src = "map.png";
+
+let W = window.innerWidth;
+let H = window.innerHeight;
+
+canvas.width = W;
+canvas.height = H;
+
+/*
+  আপনার দেওয়া Map-এর মূল অনুপাত।
+  Map বড় থাকলেও স্ক্রিন অনুযায়ী নিজে scale হবে।
+*/
+const WORLD_W = 1536;
+const WORLD_H = 1024;
+
+
+/* =========================
+   GAME STATE
+========================= */
+
+let money = Number(localStorage.getItem("td_money")) || 380000;
+let fuel = Number(localStorage.getItem("td_fuel")) || 100;
+let truckName =
+  localStorage.getItem("td_truck") || "Mini Truck";
+
+let mode = "drive";
+
+let truck = {
+  x: 520,
+  y: 570,
+  width: 42,
+  height: 70,
+  speed: 2.8,
+  angle: 0
+};
+
+let player = {
+  x: 520,
+  y: 570,
+  speed: 3.2
+};
+
+let keys = {
+  up:false,
+  down:false,
+  left:false,
+  right:false
+};
+
+let camera = {
+  x:0,
+  y:0
+};
+
+
+/* =========================
+   MAP LOCATIONS
+========================= */
+
+const locations = {
+
+  showroom:{
+    name:"🏪 Showroom",
+    x:520,
+    y:520,
+    radius:100
+  },
+
+  gate:{
+    name:"🚪 Showroom Gate",
+    x:520,
+    y:600,
+    radius:70
+  },
+
+  usedMarket:{
+    name:"🚛 Used Truck Market",
+    x:850,
+    y:630,
+    radius:105
+  },
+
+  garage:{
+    name:"🔧 Truck Garage",
+    x:1320,
+    y:520,
+    radius:100
+  },
+
+  service:{
+    name:"🛠️ Service Center",
+    x:970,
+    y:470,
+    radius:90
+  },
+
+  fuel:{
+    name:"⛽ Fuel Station",
+    x:1060,
+    y:190,
+    radius:90
+  },
+
+  warehouse:{
+    name:"📦 Warehouse",
+    x:1330,
+    y:310,
+    radius:100
+  },
+
+  parking:{
+    name:"🅿️ Parking Area",
+    x:1000,
+    y:600,
+    radius:90
+  },
+
+  food:{
+    name:"🍔 Food & Rest",
+    x:760,
+    y:820,
+    radius:90
+  },
+
+  highway:{
+    name:"🛣️ Main Highway",
+    x:1190,
+    y:800,
+    radius:110
+  }
+};
+
+
+/* =========================
+   UI
+========================= */
 
 const moneyEl = document.getElementById("money");
 const fuelEl = document.getElementById("fuel");
-const placeEl = document.getElementById("place");
+const truckEl = document.getElementById("truckName");
+
+const locationEl = document.getElementById("location");
 const messageEl = document.getElementById("message");
+
 const actionBtn = document.getElementById("actionBtn");
-const modeEl = document.getElementById("mode");
+const modeBtn = document.getElementById("modeBtn");
 
-let W = innerWidth;
-let H = innerHeight;
+const marketPanel = document.getElementById("marketPanel");
+const garagePanel = document.getElementById("garagePanel");
 
-function resize() {
-  W = innerWidth;
-  H = innerHeight;
+const garageTruck = document.getElementById("garageTruck");
+const garageFuel = document.getElementById("garageFuel");
+
+
+function updateUI(){
+
+  moneyEl.textContent = Math.floor(money).toLocaleString();
+
+  fuelEl.textContent = Math.max(0,Math.floor(fuel));
+
+  truckEl.textContent = truckName;
+
+  garageTruck.textContent = truckName;
+
+  garageFuel.textContent = Math.floor(fuel) + "%";
+
+  localStorage.setItem("td_money",money);
+  localStorage.setItem("td_fuel",fuel);
+  localStorage.setItem("td_truck",truckName);
+}
+
+
+/* =========================
+   RESIZE
+========================= */
+
+function resize(){
+
+  W = window.innerWidth;
+  H = window.innerHeight;
 
   canvas.width = W;
   canvas.height = H;
 }
 
-addEventListener("resize", resize);
-resize();
+window.addEventListener("resize",resize);
+
 
 /* =========================
-   SAVE
+   KEYBOARD
 ========================= */
 
-let save = JSON.parse(
-  localStorage.getItem("truckDealerGame")
-);
+window.addEventListener("keydown",e=>{
 
-if (!save) {
-  save = {
-    money: 380000,
-    fuel: 100
-  };
-}
+  if(e.key==="ArrowUp" || e.key.toLowerCase()==="w")
+    keys.up=true;
 
-function saveGame() {
-  localStorage.setItem(
-    "truckDealerGame",
-    JSON.stringify(save)
-  );
-}
+  if(e.key==="ArrowDown" || e.key.toLowerCase()==="s")
+    keys.down=true;
+
+  if(e.key==="ArrowLeft" || e.key.toLowerCase()==="a")
+    keys.left=true;
+
+  if(e.key==="ArrowRight" || e.key.toLowerCase()==="d")
+    keys.right=true;
+});
+
+
+window.addEventListener("keyup",e=>{
+
+  if(e.key==="ArrowUp" || e.key.toLowerCase()==="w")
+    keys.up=false;
+
+  if(e.key==="ArrowDown" || e.key.toLowerCase()==="s")
+    keys.down=false;
+
+  if(e.key==="ArrowLeft" || e.key.toLowerCase()==="a")
+    keys.left=false;
+
+  if(e.key==="ArrowRight" || e.key.toLowerCase()==="d")
+    keys.right=false;
+});
+
 
 /* =========================
-   WORLD
+   MOBILE CONTROLS
 ========================= */
 
-const WORLD_WIDTH = 3200;
-const WORLD_HEIGHT = 2200;
+document.querySelectorAll(".control").forEach(button=>{
 
-/* =========================
-   MAIN LOCATIONS
-========================= */
+  const dir = button.dataset.dir;
 
-/*
-   SHOWROOM
-   সামনে রাস্তার দিকে বড় Gate
-*/
-
-const showroom = {
-  x: 350,
-  y: 180,
-  w: 620,
-  h: 470
-};
-
-/*
-   MARKET
-*/
-
-const market = {
-  x: 2250,
-  y: 180,
-  w: 600,
-  h: 330
-};
-
-/*
-   GARAGE
-   নিচের দিকে বড় Garage
-*/
-
-const garage = {
-  x: 2200,
-  y: 1250,
-  w: 650,
-  h: 380
-};
-
-/*
-   WORKER OFFICE
-*/
-
-const office = {
-  x: 350,
-  y: 1350,
-  w: 600,
-  h: 330
-};
-
-/* =========================
-   ROAD SYSTEM
-========================= */
-
-/*
-   Main road:
-   Y 720 - 900
-
-   Vertical road:
-   X 1200 - 1420
-
-   Lower road:
-   Y 1080 - 1190
-*/
-
-/* =========================
-   PLAYER
-========================= */
-
-const player = {
-  x: 660,
-  y: 390,
-  width: 28,
-  height: 30,
-  speed: 4
-};
-
-/* =========================
-   TRUCK
-========================= */
-
-const truck = {
-  x: 660,
-  y: 555,
-  width: 58,
-  height: 105,
-  speed: 6,
-  angle: 0
-};
-
-let driving = false;
-
-/* =========================
-   CAMERA
-========================= */
-
-const camera = {
-  x: 0,
-  y: 0
-};
-
-/* =========================
-   CONTROLS
-========================= */
-
-const keys = {
-  up: false,
-  down: false,
-  left: false,
-  right: false
-};
-
-document.querySelectorAll(".control").forEach(btn => {
-
-  const key = btn.dataset.key;
-
-  function down(e) {
+  function start(e){
     e.preventDefault();
-    keys[key] = true;
+    keys[dir]=true;
   }
 
-  function up(e) {
+  function stop(e){
     e.preventDefault();
-    keys[key] = false;
+    keys[dir]=false;
   }
 
-  btn.addEventListener(
-    "touchstart",
-    down,
-    { passive: false }
-  );
+  button.addEventListener("touchstart",start,{passive:false});
+  button.addEventListener("touchend",stop,{passive:false});
+  button.addEventListener("touchcancel",stop,{passive:false});
 
-  btn.addEventListener(
-    "touchend",
-    up,
-    { passive: false }
-  );
-
-  btn.addEventListener(
-    "touchcancel",
-    up,
-    { passive: false }
-  );
-
-  btn.addEventListener(
-    "mousedown",
-    down
-  );
-
-  btn.addEventListener(
-    "mouseup",
-    up
-  );
-
-  btn.addEventListener(
-    "mouseleave",
-    up
-  );
+  button.addEventListener("mousedown",start);
+  button.addEventListener("mouseup",stop);
+  button.addEventListener("mouseleave",stop);
 });
 
-/* Keyboard */
 
-addEventListener("keydown", e => {
+/* =========================
+   DRIVE / WALK
+========================= */
 
-  if (
-    e.key === "ArrowUp" ||
-    e.key.toLowerCase() === "w"
-  )
-    keys.up = true;
+modeBtn.addEventListener("click",()=>{
 
-  if (
-    e.key === "ArrowDown" ||
-    e.key.toLowerCase() === "s"
-  )
-    keys.down = true;
+  if(mode==="drive"){
 
-  if (
-    e.key === "ArrowLeft" ||
-    e.key.toLowerCase() === "a"
-  )
-    keys.left = true;
+    mode="walk";
 
-  if (
-    e.key === "ArrowRight" ||
-    e.key.toLowerCase() === "d"
-  )
-    keys.right = true;
+    player.x=truck.x;
+    player.y=truck.y+55;
+
+    modeBtn.textContent="🚶 WALK";
+
+    messageEl.textContent="🚶 আপনি ট্রাক থেকে নেমেছেন।";
+
+  }else{
+
+    const distance =
+      Math.hypot(
+        player.x-truck.x,
+        player.y-truck.y
+      );
+
+    if(distance < 100){
+
+      mode="drive";
+
+      truck.x=player.x;
+      truck.y=player.y;
+
+      modeBtn.textContent="🚛 DRIVE";
+
+      messageEl.textContent="🚛 আপনি ট্রাকে উঠেছেন।";
+
+    }else{
+
+      messageEl.textContent=
+        "🚛 ট্রাকের কাছে যান তারপর DRIVE চাপুন।";
+    }
+  }
 });
 
-addEventListener("keyup", e => {
-
-  if (
-    e.key === "ArrowUp" ||
-    e.key.toLowerCase() === "w"
-  )
-    keys.up = false;
-
-  if (
-    e.key === "ArrowDown" ||
-    e.key.toLowerCase() === "s"
-  )
-    keys.down = false;
-
-  if (
-    e.key === "ArrowLeft" ||
-    e.key.toLowerCase() === "a"
-  )
-    keys.left = false;
-
-  if (
-    e.key === "ArrowRight" ||
-    e.key.toLowerCase() === "d"
-  )
-    keys.right = false;
-});
 
 /* =========================
-   HOUSES
+   DISTANCE
 ========================= */
 
-const houses = [];
-
-const houseColors = [
-  "#dba46e",
-  "#82a8c9",
-  "#c78da9",
-  "#88b879",
-  "#d0bd82",
-  "#a890c7"
-];
-
-function addHouse(x, y, w, h, color) {
-  houses.push({
-    x,
-    y,
-    w,
-    h,
-    color
-  });
-}
-
-/*
-   IMPORTANT:
-   Showroom-এর জায়গা ফাঁকা রাখা হয়েছে।
-*/
-
-/* উপরের বাম এলাকা */
-
-addHouse(40, 220, 190, 140, houseColors[0]);
-addHouse(40, 420, 190, 140, houseColors[1]);
-
-addHouse(1050, 180, 190, 140, houseColors[2]);
-addHouse(1050, 390, 190, 140, houseColors[3]);
-
-/* রাস্তার নিচে */
-
-addHouse(40, 960, 190, 140, houseColors[4]);
-addHouse(300, 960, 190, 140, houseColors[5]);
-
-addHouse(580, 960, 190, 140, houseColors[0]);
-addHouse(850, 960, 190, 140, houseColors[1]);
-
-/* ডান পাশে */
-
-addHouse(1540, 200, 190, 140, houseColors[2]);
-addHouse(1770, 400, 190, 140, houseColors[3]);
-
-addHouse(1540, 960, 190, 140, houseColors[4]);
-addHouse(1770, 960, 190, 140, houseColors[5]);
-
-/* নিচের শহর */
-
-addHouse(40, 1760, 190, 140, houseColors[0]);
-addHouse(300, 1760, 190, 140, houseColors[1]);
-
-addHouse(1050, 1760, 190, 140, houseColors[2]);
-addHouse(1450, 1760, 190, 140, houseColors[3]);
-
-/* =========================
-   SHOPS
-========================= */
-
-const shops = [
-  {
-    x: 40,
-    y: 650,
-    w: 150,
-    h: 100,
-    name: "SHOP",
-    color: "#c62828"
-  },
-
-  {
-    x: 200,
-    y: 650,
-    w: 150,
-    h: 100,
-    name: "CAFE",
-    color: "#6d4c41"
-  },
-
-  {
-    x: 1600,
-    y: 650,
-    w: 170,
-    h: 100,
-    name: "PARTS",
-    color: "#546e7a"
-  },
-
-  {
-    x: 1810,
-    y: 650,
-    w: 170,
-    h: 100,
-    name: "FOOD",
-    color: "#ad1457"
-  }
-];
-
-/* =========================
-   TREES
-========================= */
-
-const trees = [];
-
-function addTree(x, y, size = 28) {
-  trees.push({
-    x,
-    y,
-    size
-  });
-}
-
-for (let x = 20; x < WORLD_WIDTH; x += 150) {
-
-  if (
-    x < 300 ||
-    x > 1000
-  ) {
-    addTree(x, 620);
-  }
-
-  addTree(x + 50, 1030);
-}
-
-for (
-  let y = 50;
-  y < WORLD_HEIGHT;
-  y += 150
-) {
-
-  if (
-    y < 600 ||
-    y > 1200
-  ) {
-    addTree(1150, y);
-    addTree(1480, y + 50);
-  }
-}
-
-/* =========================
-   COLLISION RECTANGLES
-========================= */
-
-function buildingCollisionRects() {
-
-  const result = [];
-
-  /*
-     SHOWROOM WALLS
-
-     Gate:
-     X 580 - 740
-     Y 610 - 680
-
-     এই অংশ খোলা থাকবে।
-  */
-
-  result.push({
-
-    x: showroom.x,
-    y: showroom.y,
-    w: showroom.w,
-    h: 25
-  });
-
-  result.push({
-
-    x: showroom.x,
-    y: showroom.y,
-    w: 25,
-    h: showroom.h
-  });
-
-  result.push({
-
-    x: showroom.x + showroom.w - 25,
-    y: showroom.y,
-    w: 25,
-    h: showroom.h
-  });
-
-  /* showroom bottom wall - gate বাদ */
-
-  result.push({
-
-    x: showroom.x,
-    y: showroom.y + showroom.h - 25,
-    w: 230,
-    h: 25
-  });
-
-  result.push({
-
-    x: showroom.x + 390,
-    y: showroom.y + showroom.h - 25,
-    w: 230,
-    h: 25
-  });
-
-  /*
-     MARKET
-  */
-
-  result.push({
-    x: market.x,
-    y: market.y,
-    w: market.w,
-    h: 25
-  });
-
-  result.push({
-    x: market.x,
-    y: market.y,
-    w: 25,
-    h: market.h
-  });
-
-  result.push({
-    x: market.x + market.w - 25,
-    y: market.y,
-    w: 25,
-    h: market.h
-  });
-
-  result.push({
-    x: market.x,
-    y: market.y + market.h - 25,
-    w: market.w,
-    h: 25
-  });
-
-  /*
-     GARAGE
-     সামনে বড় Garage Gate
-  */
-
-  result.push({
-    x: garage.x,
-    y: garage.y,
-    w: 230,
-    h: 25
-  });
-
-  result.push({
-    x: garage.x + 420,
-    y: garage.y,
-    w: 230,
-    h: 25
-  });
-
-  result.push({
-    x: garage.x,
-    y: garage.y,
-    w: 25,
-    h: garage.h
-  });
-
-  result.push({
-    x: garage.x + garage.w - 25,
-    y: garage.y,
-    w: 25,
-    h: garage.h
-  });
-
-  result.push({
-    x: garage.x,
-    y: garage.y + garage.h - 25,
-    w: garage.w,
-    h: 25
-  });
-
-  /*
-     OFFICE
-  */
-
-  result.push({
-    x: office.x,
-    y: office.y,
-    w: office.w,
-    h: 25
-  });
-
-  result.push({
-    x: office.x,
-    y: office.y,
-    w: 25,
-    h: office.h
-  });
-
-  result.push({
-    x: office.x + office.w - 25,
-    y: office.y,
-    w: 25,
-    h: office.h
-  });
-
-  result.push({
-    x: office.x,
-    y: office.y + office.h - 25,
-    w: office.w,
-    h: 25
-  });
-
-  return result;
-}
-
-/* =========================
-   RECTANGLE COLLISION
-========================= */
-
-function collision(a, b) {
-
-  return (
-    a.x - a.width / 2 < b.x + b.w &&
-    a.x + a.width / 2 > b.x &&
-    a.y - a.height / 2 < b.y + b.h &&
-    a.y + a.height / 2 > b.y
-  );
-}
-
-function canMove(object, x, y) {
-
-  const test = {
-    x,
-    y,
-    width: object.width,
-    height: object.height
-  };
-
-  /*
-     Buildings
-  */
-
-  for (
-    const b
-    of buildingCollisionRects()
-  ) {
-
-    if (
-      collision(test, b)
-    ) {
-
-      return false;
-    }
-  }
-
-  /*
-     Houses
-  */
-
-  for (
-    const h
-    of houses
-  ) {
-
-    if (
-      collision(test, h)
-    ) {
-
-      return false;
-    }
-  }
-
-  /*
-     Shops
-  */
-
-  for (
-    const s
-    of shops
-  ) {
-
-    if (
-      collision(test, s)
-    ) {
-
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/* =========================
-   WORLD LIMIT
-========================= */
-
-function limitWorld(o) {
-
-  o.x = Math.max(
-    o.width / 2,
-    Math.min(
-      WORLD_WIDTH - o.width / 2,
-      o.x
-    )
-  );
-
-  o.y = Math.max(
-    o.height / 2,
-    Math.min(
-      WORLD_HEIGHT - o.height / 2,
-      o.y
-    )
-  );
-}
-
-/* =========================
-   PLAYER MOVEMENT
-========================= */
-
-function movePlayer() {
-
-  if (driving)
-    return;
-
-  let dx = 0;
-  let dy = 0;
-
-  if (keys.up)
-    dy -= 1;
-
-  if (keys.down)
-    dy += 1;
-
-  if (keys.left)
-    dx -= 1;
-
-  if (keys.right)
-    dx += 1;
-
-  if (
-    dx === 0 &&
-    dy === 0
-  )
-    return;
-
-  const length =
-    Math.sqrt(
-      dx * dx +
-      dy * dy
-    );
-
-  dx /= length;
-  dy /= length;
-
-  const nx =
-    player.x +
-    dx * player.speed;
-
-  const ny =
-    player.y +
-    dy * player.speed;
-
-  if (
-    canMove(
-      player,
-      nx,
-      player.y
-    )
-  ) {
-
-    player.x = nx;
-  }
-
-  if (
-    canMove(
-      player,
-      player.x,
-      ny
-    )
-  ) {
-
-    player.y = ny;
-  }
-
-  limitWorld(player);
-}
-
-/* =========================
-   TRUCK MOVEMENT
-========================= */
-
-function moveTruck() {
-
-  if (!driving)
-    return;
-
-  if (
-    save.fuel <= 0
-  ) {
-
-    messageEl.textContent =
-      "⛽ Fuel শেষ! Garage-এ যান।";
-
-    return;
-  }
-
-  if (keys.left) {
-
-    truck.angle -= 0.055;
-  }
-
-  if (keys.right) {
-
-    truck.angle += 0.055;
-  }
-
-  let speed = 0;
-
-  if (keys.up)
-    speed = truck.speed;
-
-  if (keys.down)
-    speed =
-      -truck.speed * 0.55;
-
-  if (speed !== 0) {
-
-    const nx =
-      truck.x +
-      Math.sin(truck.angle) *
-      speed;
-
-    const ny =
-      truck.y -
-      Math.cos(truck.angle) *
-      speed;
-
-    if (
-      canMove(
-        truck,
-        nx,
-        ny
-      )
-    ) {
-
-      truck.x = nx;
-      truck.y = ny;
-
-      save.fuel -= 0.02;
-
-      if (
-        save.fuel < 0
-      ) {
-
-        save.fuel = 0;
-      }
-
-      saveGame();
-    }
-  }
-
-  limitWorld(truck);
-}
-
-/* =========================
-   TRUCK ENTER / EXIT
-========================= */
-
-function truckDistance() {
+function distance(a,b){
 
   return Math.hypot(
-    player.x - truck.x,
-    player.y - truck.y
+    a.x-b.x,
+    a.y-b.y
   );
 }
 
-function updateActionButton() {
 
-  if (driving) {
+/* =========================
+   COLLISION
+========================= */
 
-    actionBtn.style.display =
-      "block";
+const buildings = [
 
-    actionBtn.textContent =
-      "🚶 ট্রাক থেকে নামুন";
+  // Showroom
+  {x:170,y:390,w:390,h:170},
 
+  // Dealership
+  {x:420,y:350,w:390,h:180},
+
+  // Service Center
+  {x:820,y:380,w:280,h:170},
+
+  // Fuel Station
+  {x:950,y:100,w:230,h:180},
+
+  // Warehouse
+  {x:1160,y:210,w:330,h:220},
+
+  // Garage
+  {x:1240,y:450,w:250,h:210},
+
+  // Food
+  {x:610,y:760,w:300,h:150},
+
+  // Residential blocks
+  {x:0,y:120,w:390,h:250}
+];
+
+
+function insideBuilding(x,y){
+
+  for(const b of buildings){
+
+    if(
+      x>b.x-15 &&
+      x<b.x+b.w+15 &&
+      y>b.y-15 &&
+      y<b.y+b.h+15
+    ){
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
+/* =========================
+   MOVE
+========================= */
+
+function moveObject(obj,speed){
+
+  let dx=0;
+  let dy=0;
+
+  if(keys.up) dy-=1;
+  if(keys.down) dy+=1;
+  if(keys.left) dx-=1;
+  if(keys.right) dx+=1;
+
+  if(dx===0 && dy===0)
     return;
-  }
 
-  if (
-    truckDistance() < 150
-  ) {
+  const len=Math.hypot(dx,dy);
 
-    actionBtn.style.display =
-      "block";
+  dx/=len;
+  dy/=len;
 
-    actionBtn.textContent =
-      "🚚 ট্রাকে উঠুন";
+  const nx=obj.x+dx*speed;
+  const ny=obj.y+dy*speed;
 
-  } else {
+  if(
+    nx>25 &&
+    nx<WORLD_W-25 &&
+    ny>25 &&
+    ny<WORLD_H-25 &&
+    !insideBuilding(nx,ny)
+  ){
 
-    actionBtn.style.display =
-      "none";
-  }
-}
+    obj.x=nx;
+    obj.y=ny;
 
-actionBtn.addEventListener(
-  "click",
-  () => {
+    if(dx!==0 || dy!==0){
 
-    if (driving) {
-
-      driving = false;
-
-      player.x =
-        truck.x + 70;
-
-      player.y =
-        truck.y;
-
-      modeEl.textContent =
-        "🚶 WALK";
-
-      messageEl.textContent =
-        "🚶 আপনি ট্রাক থেকে নেমেছেন।";
-
-      return;
-    }
-
-    if (
-      truckDistance() < 150
-    ) {
-
-      driving = true;
-
-      modeEl.textContent =
-        "🚚 DRIVING";
-
-      messageEl.textContent =
-        "🚚 এখন ট্রাক চালান।";
+      obj.angle=Math.atan2(dy,dx);
     }
   }
-);
-
-/* =========================
-   LOCATION
-========================= */
-
-function inside(o, b) {
-
-  return (
-    o.x > b.x &&
-    o.x < b.x + b.w &&
-    o.y > b.y &&
-    o.y < b.y + b.h
-  );
 }
 
-function getLocationName() {
-
-  const o =
-    driving
-      ? truck
-      : player;
-
-  if (
-    inside(o, showroom)
-  )
-    return "🏪 Showroom";
-
-  if (
-    inside(o, market)
-  )
-    return "🚛 Market";
-
-  if (
-    inside(o, garage)
-  )
-    return "🔧 Garage";
-
-  if (
-    inside(o, office)
-  )
-    return "👷 Worker Office";
-
-  return "🛣️ Road";
-}
 
 /* =========================
-   ROAD DRAW
+   GAME UPDATE
 ========================= */
 
-function drawRoads() {
+function update(){
 
-  /* Grass */
+  if(mode==="drive"){
 
-  ctx.fillStyle =
-    "#5d9f4c";
+    if(fuel>0){
 
-  ctx.fillRect(
-    0,
-    0,
-    WORLD_WIDTH,
-    WORLD_HEIGHT
-  );
+      moveObject(truck,truck.speed);
 
-  /* Main road */
+      if(
+        keys.up ||
+        keys.down ||
+        keys.left ||
+        keys.right
+      ){
 
-  ctx.fillStyle =
-    "#4e4e4e";
+        fuel-=0.015;
 
-  ctx.fillRect(
-    0,
-    720,
-    WORLD_WIDTH,
-    180
-  );
+        if(fuel<0)
+          fuel=0;
+      }
 
-  /* Vertical road */
+    }else{
 
-  ctx.fillRect(
-    1200,
-    0,
-    220,
-    WORLD_HEIGHT
-  );
+      messageEl.textContent=
+        "⛽ Fuel শেষ! Fuel Station-এ যান।";
+    }
 
-  /* Lower road */
+  }else{
 
-  ctx.fillRect(
-    0,
-    1080,
-    WORLD_WIDTH,
-    110
-  );
-
-  /* Sidewalk */
-
-  ctx.fillStyle =
-    "#bdbdbd";
-
-  ctx.fillRect(
-    0,
-    695,
-    WORLD_WIDTH,
-    25
-  );
-
-  ctx.fillRect(
-    0,
-    900,
-    WORLD_WIDTH,
-    25
-  );
-
-  ctx.fillRect(
-    1175,
-    0,
-    25,
-    WORLD_HEIGHT
-  );
-
-  ctx.fillRect(
-    1420,
-    0,
-    25,
-    WORLD_HEIGHT
-  );
-
-  /* Road lines */
-
-  ctx.strokeStyle =
-    "#f5d85a";
-
-  ctx.lineWidth = 7;
-
-  ctx.setLineDash([
-    60,
-    40
-  ]);
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    0,
-    810
-  );
-
-  ctx.lineTo(
-    WORLD_WIDTH,
-    810
-  );
-
-  ctx.stroke();
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    1310,
-    0
-  );
-
-  ctx.lineTo(
-    1310,
-    WORLD_HEIGHT
-  );
-
-  ctx.stroke();
-
-  ctx.setLineDash([]);
-
-  /*
-     Showroom driveway
-  */
-
-  ctx.fillStyle =
-    "#555";
-
-  ctx.fillRect(
-    580,
-    625,
-    160,
-    100
-  );
-
-  /*
-     Garage driveway
-  */
-
-  ctx.fillRect(
-    2430,
-    925,
-    160,
-    325
-  );
-}
-
-/* =========================
-   HOUSE DRAW
-========================= */
-
-function drawHouse(h) {
-
-  /* shadow */
-
-  ctx.fillStyle =
-    "rgba(0,0,0,.25)";
-
-  ctx.fillRect(
-    h.x + 8,
-    h.y + 10,
-    h.w,
-    h.h
-  );
-
-  /* building */
-
-  ctx.fillStyle =
-    h.color;
-
-  ctx.fillRect(
-    h.x,
-    h.y,
-    h.w,
-    h.h
-  );
-
-  /* roof */
-
-  ctx.fillStyle =
-    "#65443a";
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    h.x - 12,
-    h.y
-  );
-
-  ctx.lineTo(
-    h.x + h.w / 2,
-    h.y - 55
-  );
-
-  ctx.lineTo(
-    h.x + h.w + 12,
-    h.y
-  );
-
-  ctx.closePath();
-
-  ctx.fill();
-
-  /* windows */
-
-  ctx.fillStyle =
-    "#a5ddff";
-
-  ctx.fillRect(
-    h.x + 22,
-    h.y + 35,
-    42,
-    38
-  );
-
-  ctx.fillRect(
-    h.x + h.w - 64,
-    h.y + 35,
-    42,
-    38
-  );
-
-  /* door */
-
-  ctx.fillStyle =
-    "#5c3c2d";
-
-  ctx.fillRect(
-    h.x + h.w / 2 - 20,
-    h.y + h.h - 60,
-    40,
-    60
-  );
-}
-
-/* =========================
-   SHOP DRAW
-========================= */
-
-function drawShop(s) {
-
-  ctx.fillStyle =
-    "rgba(0,0,0,.25)";
-
-  ctx.fillRect(
-    s.x + 7,
-    s.y + 8,
-    s.w,
-    s.h
-  );
-
-  ctx.fillStyle =
-    s.color;
-
-  ctx.fillRect(
-    s.x,
-    s.y,
-    s.w,
-    s.h
-  );
-
-  ctx.fillStyle =
-    "#fff";
-
-  ctx.font =
-    "bold 18px Arial";
-
-  ctx.textAlign =
-    "center";
-
-  ctx.fillText(
-    s.name,
-    s.x + s.w / 2,
-    s.y + 30
-  );
-
-  ctx.fillStyle =
-    "#9bdcff";
-
-  ctx.fillRect(
-    s.x + 20,
-    s.y + 50,
-    s.w - 40,
-    35
-  );
-}
-
-/* =========================
-   TREE DRAW
-========================= */
-
-function drawTree(t) {
-
-  ctx.fillStyle =
-    "#65452e";
-
-  ctx.fillRect(
-    t.x - 5,
-    t.y,
-    10,
-    t.size
-  );
-
-  ctx.fillStyle =
-    "#287b37";
-
-  ctx.beginPath();
-
-  ctx.arc(
-    t.x,
-    t.y - 10,
-    t.size,
-    0,
-    Math.PI * 2
-  );
-
-  ctx.fill();
-
-  ctx.fillStyle =
-    "#3e9948";
-
-  ctx.beginPath();
-
-  ctx.arc(
-    t.x - 13,
-    t.y,
-    t.size * .65,
-    0,
-    Math.PI * 2
-  );
-
-  ctx.fill();
-
-  ctx.beginPath();
-
-  ctx.arc(
-    t.x + 13,
-    t.y,
-    t.size * .65,
-    0,
-    Math.PI * 2
-  );
-
-  ctx.fill();
-}
-
-/* =========================
-   SHOWROOM DRAW
-========================= */
-
-function drawShowroom() {
-
-  /* shadow */
-
-  ctx.fillStyle =
-    "rgba(0,0,0,.3)";
-
-  ctx.fillRect(
-    showroom.x + 12,
-    showroom.y + 12,
-    showroom.w,
-    showroom.h
-  );
-
-  /* building */
-
-  ctx.fillStyle =
-    "#1976d2";
-
-  ctx.fillRect(
-    showroom.x,
-    showroom.y,
-    showroom.w,
-    showroom.h
-  );
-
-  /* roof */
-
-  ctx.fillStyle =
-    "#303030";
-
-  ctx.fillRect(
-    showroom.x - 8,
-    showroom.y - 22,
-    showroom.w + 16,
-    22
-  );
-
-  /* title */
-
-  ctx.fillStyle =
-    "#fff";
-
-  ctx.font =
-    "bold 32px Arial";
-
-  ctx.textAlign =
-    "center";
-
-  ctx.fillText(
-    "🏪 SHOWROOM",
-    showroom.x + showroom.w / 2,
-    showroom.y + 60
-  );
-
-  /* windows */
-
-  ctx.fillStyle =
-    "#9bdcff";
-
-  ctx.fillRect(
-    showroom.x + 45,
-    showroom.y + 110,
-    110,
-    70
-  );
-
-  ctx.fillRect(
-    showroom.x + showroom.w - 155,
-    showroom.y + 110,
-    110,
-    70
-  );
-
-  /*
-     SHOWROOM GATE
-
-     বড় গাড়ির গেট
-  */
-
-  ctx.fillStyle =
-    "#303030";
-
-  ctx.fillRect(
-    showroom.x + 230,
-    showroom.y + showroom.h - 25,
-    160,
-    25
-  );
-
-  /* gate sign */
-
-  ctx.fillStyle =
-    "#ffcc00";
-
-  ctx.fillRect(
-    showroom.x + 245,
-    showroom.y + showroom.h - 75,
-    130,
-    42
-  );
-
-  ctx.fillStyle =
-    "#111";
-
-  ctx.font =
-    "bold 16px Arial";
-
-  ctx.fillText(
-    "🚪 EXIT",
-    showroom.x + 310,
-    showroom.y + showroom.h - 48
-  );
-
-  /* door sides */
-
-  ctx.fillStyle =
-    "#333";
-
-  ctx.fillRect(
-    showroom.x + 60,
-    showroom.y + showroom.h - 100,
-    90,
-    100
-  );
-
-  ctx.fillRect(
-    showroom.x + showroom.w - 150,
-    showroom.y + showroom.h - 100,
-    90,
-    100
-  );
-}
-
-/* =========================
-   MARKET DRAW
-========================= */
-
-function drawMarket() {
-
-  drawBuilding(
-    market,
-    "#8e24aa",
-    "🚛 TRUCK MARKET"
-  );
-}
-
-/* =========================
-   GARAGE DRAW
-========================= */
-
-function drawGarage() {
-
-  /* shadow */
-
-  ctx.fillStyle =
-    "rgba(0,0,0,.3)";
-
-  ctx.fillRect(
-    garage.x + 12,
-    garage.y + 12,
-    garage.w,
-    garage.h
-  );
-
-  /* building */
-
-  ctx.fillStyle =
-    "#ef6c00";
-
-  ctx.fillRect(
-    garage.x,
-    garage.y,
-    garage.w,
-    garage.h
-  );
-
-  /* roof */
-
-  ctx.fillStyle =
-    "#333";
-
-  ctx.fillRect(
-    garage.x - 8,
-    garage.y - 22,
-    garage.w + 16,
-    22
-  );
-
-  /* title */
-
-  ctx.fillStyle =
-    "#fff";
-
-  ctx.font =
-    "bold 31px Arial";
-
-  ctx.textAlign =
-    "center";
-
-  ctx.fillText(
-    "🔧 GARAGE",
-    garage.x + garage.w / 2,
-    garage.y + 58
-  );
-
-  /*
-     Garage entrance
-  */
-
-  ctx.fillStyle =
-    "#252525";
-
-  ctx.fillRect(
-    garage.x + 230,
-    garage.y,
-    190,
-    170
-  );
-
-  /* inside */
-
-  ctx.fillStyle =
-    "#555";
-
-  ctx.fillRect(
-    garage.x + 250,
-    garage.y + 20,
-    150,
-    130
-  );
-
-  /* sign */
-
-  ctx.fillStyle =
-    "#ffd54f";
-
-  ctx.fillRect(
-    garage.x + 245,
-    garage.y + 195,
-    160,
-    45
-  );
-
-  ctx.fillStyle =
-    "#111";
-
-  ctx.font =
-    "bold 17px Arial";
-
-  ctx.fillText(
-    "🚚 SERVICE",
-    garage.x + 325,
-    garage.y + 224
-  );
-
-  /* windows */
-
-  ctx.fillStyle =
-    "#9bdcff";
-
-  ctx.fillRect(
-    garage.x + 45,
-    garage.y + 75,
-    100,
-    65
-  );
-
-  ctx.fillRect(
-    garage.x + garage.w - 145,
-    garage.y + 75,
-    100,
-    65
-  );
-}
-
-/* =========================
-   OFFICE DRAW
-========================= */
-
-function drawOffice() {
-
-  drawBuilding(
-    office,
-    "#00897b",
-    "👷 WORKER OFFICE"
-  );
-}
-
-/* =========================
-   NORMAL BUILDING
-========================= */
-
-function drawBuilding(
-  b,
-  color,
-  title
-) {
-
-  ctx.fillStyle =
-    "rgba(0,0,0,.3)";
-
-  ctx.fillRect(
-    b.x + 10,
-    b.y + 10,
-    b.w,
-    b.h
-  );
-
-  ctx.fillStyle =
-    color;
-
-  ctx.fillRect(
-    b.x,
-    b.y,
-    b.w,
-    b.h
-  );
-
-  ctx.fillStyle =
-    "#303030";
-
-  ctx.fillRect(
-    b.x - 8,
-    b.y - 20,
-    b.w + 16,
-    20
-  );
-
-  ctx.fillStyle =
-    "#fff";
-
-  ctx.font =
-    "bold 28px Arial";
-
-  ctx.textAlign =
-    "center";
-
-  ctx.fillText(
-    title,
-    b.x + b.w / 2,
-    b.y + 55
-  );
-
-  ctx.fillStyle =
-    "#9bdcff";
-
-  ctx.fillRect(
-    b.x + 45,
-    b.y + 100,
-    100,
-    65
-  );
-
-  ctx.fillRect(
-    b.x + b.w - 145,
-    b.y + 100,
-    100,
-    65
-  );
-}
-
-/* =========================
-   PLAYER DRAW
-========================= */
-
-function drawPlayer() {
-
-  ctx.save();
-
-  ctx.translate(
-    player.x,
-    player.y
-  );
-
-  /* shadow */
-
-  ctx.fillStyle =
-    "rgba(0,0,0,.3)";
-
-  ctx.beginPath();
-
-  ctx.ellipse(
-    0,
-    14,
-    18,
-    8,
-    0,
-    0,
-    Math.PI * 2
-  );
-
-  ctx.fill();
-
-  /* body */
-
-  ctx.fillStyle =
-    "#1976d2";
-
-  ctx.fillRect(
-    -12,
-    -7,
-    24,
-    27
-  );
-
-  /* head */
-
-  ctx.fillStyle =
-    "#ffd1a3";
-
-  ctx.beginPath();
-
-  ctx.arc(
-    0,
-    -18,
-    10,
-    0,
-    Math.PI * 2
-  );
-
-  ctx.fill();
-
-  ctx.restore();
-}
-
-/* =========================
-   TRUCK DRAW
-========================= */
-
-function drawTruck() {
-
-  ctx.save();
-
-  ctx.translate(
-    truck.x,
-    truck.y
-  );
-
-  ctx.rotate(
-    truck.angle
-  );
-
-  /* shadow */
-
-  ctx.fillStyle =
-    "rgba(0,0,0,.35)";
-
-  ctx.fillRect(
-    -29,
-    -52,
-    58,
-    108
-  );
-
-  /* cargo */
-
-  ctx.fillStyle =
-    "#f5b82e";
-
-  ctx.fillRect(
-    -23,
-    -3,
-    46,
-    51
-  );
-
-  /* cabin */
-
-  ctx.fillStyle =
-    "#e53935";
-
-  ctx.fillRect(
-    -24,
-    -52,
-    48,
-    50
-  );
-
-  /* windshield */
-
-  ctx.fillStyle =
-    "#8fd5ff";
-
-  ctx.fillRect(
-    -17,
-    -44,
-    34,
-    21
-  );
-
-  /* wheels */
-
-  ctx.fillStyle =
-    "#111";
-
-  ctx.fillRect(
-    -32,
-    -35,
-    9,
-    23
-  );
-
-  ctx.fillRect(
-    23,
-    -35,
-    9,
-    23
-  );
-
-  ctx.fillRect(
-    -32,
-    22,
-    9,
-    23
-  );
-
-  ctx.fillRect(
-    23,
-    22,
-    9,
-    23
-  );
-
-  ctx.restore();
-}
-
-/* =========================
-   WORLD DRAW
-========================= */
-
-function drawWorld() {
-
-  drawRoads();
-
-  /*
-     Houses
-  */
-
-  for (
-    const house
-    of houses
-  ) {
-
-    drawHouse(house);
+    moveObject(player,player.speed);
   }
 
-  /*
-     Shops
-  */
+  updateCamera();
 
-  for (
-    const shop
-    of shops
-  ) {
+  updateLocation();
 
-    drawShop(shop);
-  }
-
-  /*
-     Trees
-  */
-
-  for (
-    const tree
-    of trees
-  ) {
-
-    drawTree(tree);
-  }
-
-  /*
-     Locations
-  */
-
-  drawShowroom();
-
-  drawMarket();
-
-  drawGarage();
-
-  drawOffice();
-
-  /*
-     Truck
-  */
-
-  drawTruck();
-
-  /*
-     Player
-  */
-
-  if (!driving) {
-
-    drawPlayer();
-  }
+  updateUI();
 }
+
 
 /* =========================
    CAMERA
 ========================= */
 
-function updateCamera() {
+function updateCamera(){
 
-  const target =
-    driving
+  let target =
+    mode==="drive"
       ? truck
       : player;
 
   camera.x =
-    target.x - W / 2;
+    target.x -
+    W/2;
 
   camera.y =
-    target.y - H / 2;
+    target.y -
+    H/2;
 
-  camera.x =
-    Math.max(
-      0,
-      Math.min(
-        WORLD_WIDTH - W,
-        camera.x
-      )
+  const scale =
+    Math.min(
+      W/WORLD_W*1.7,
+      H/WORLD_H*1.7
     );
 
-  camera.y =
-    Math.max(
-      0,
-      Math.min(
-        WORLD_HEIGHT - H,
-        camera.y
-      )
-    );
+  camera.scale=scale;
 }
 
+
 /* =========================
-   RENDER
+   LOCATION CHECK
 ========================= */
 
-function render() {
+let currentLocation=null;
+
+function updateLocation(){
+
+  let obj =
+    mode==="drive"
+      ? truck
+      : player;
+
+  currentLocation=null;
+
+  for(const key in locations){
+
+    const loc=locations[key];
+
+    const d=distance(obj,loc);
+
+    if(d<loc.radius){
+
+      currentLocation=key;
+
+      locationEl.textContent=loc.name;
+
+      break;
+    }
+  }
+
+  if(!currentLocation){
+
+    locationEl.textContent="🛣️ Road";
+
+    actionBtn.classList.add("hidden");
+
+    return;
+  }
+
+
+  if(currentLocation==="usedMarket"){
+
+    actionBtn.textContent=
+      "🚛 USED TRUCK MARKET";
+
+    actionBtn.classList.remove("hidden");
+
+  }else if(currentLocation==="garage"){
+
+    actionBtn.textContent=
+      "🔧 GARAGE";
+
+    actionBtn.classList.remove("hidden");
+
+  }else if(currentLocation==="fuel"){
+
+    actionBtn.textContent=
+      "⛽ FUEL STATION";
+
+    actionBtn.classList.remove("hidden");
+
+  }else if(currentLocation==="service"){
+
+    actionBtn.textContent=
+      "🛠️ SERVICE CENTER";
+
+    actionBtn.classList.remove("hidden");
+
+  }else{
+
+    actionBtn.classList.add("hidden");
+  }
+}
+
+
+/* =========================
+   ACTION
+========================= */
+
+actionBtn.addEventListener("click",()=>{
+
+  if(currentLocation==="usedMarket"){
+
+    marketPanel.classList.remove("hidden");
+
+  }
+
+  if(currentLocation==="garage"){
+
+    garagePanel.classList.remove("hidden");
+
+  }
+
+  if(currentLocation==="fuel"){
+
+    if(money>=5000){
+
+      money-=5000;
+      fuel=100;
+
+      messageEl.textContent=
+        "⛽ Fuel সম্পূর্ণ ভরে গেছে!";
+
+    }else{
+
+      messageEl.textContent=
+        "💰 Fuel ভরার জন্য টাকা কম।";
+    }
+  }
+
+  if(currentLocation==="service"){
+
+    if(money>=10000){
+
+      money-=10000;
+
+      messageEl.textContent=
+        "🔧 Truck Service সম্পন্ন হয়েছে!";
+
+    }else{
+
+      messageEl.textContent=
+        "💰 Service করার জন্য টাকা কম।";
+    }
+  }
+
+  updateUI();
+});
+
+
+/* =========================
+   MARKET
+========================= */
+
+window.buyTruck=function(name,price){
+
+  if(money<price){
+
+    alert("💰 আপনার কাছে পর্যাপ্ত টাকা নেই!");
+
+    return;
+  }
+
+  money-=price;
+
+  truckName=name;
+
+  fuel=100;
+
+  alert(
+    "✅ অভিনন্দন!\n\n"+
+    name+
+    " সফলভাবে কেনা হয়েছে।"
+  );
+
+  updateUI();
+};
+
+
+window.sellTruck=function(){
+
+  let price=0;
+
+  if(truckName==="Mini Truck")
+    price=90000;
+
+  if(truckName==="Medium Truck")
+    price=180000;
+
+  if(truckName==="Heavy Truck")
+    price=320000;
+
+  money+=price;
+
+  alert(
+    "💰 আপনার "+truckName+
+    " বিক্রি হয়েছে!\n\n"+
+    "আপনি পেয়েছেন ৳"+
+    price.toLocaleString()
+  );
+
+  truckName="Mini Truck";
+
+  updateUI();
+};
+
+
+/* =========================
+   GARAGE
+========================= */
+
+window.repairTruck=function(){
+
+  if(money>=10000){
+
+    money-=10000;
+
+    alert("🔧 Truck Repair সম্পন্ন!");
+
+    updateUI();
+
+  }else{
+
+    alert("💰 Repair করার জন্য টাকা কম!");
+  }
+};
+
+
+window.fillFuel=function(){
+
+  if(money>=5000){
+
+    money-=5000;
+
+    fuel=100;
+
+    alert("⛽ Fuel 100% হয়েছে!");
+
+    updateUI();
+
+  }else{
+
+    alert("💰 Fuel নেওয়ার জন্য টাকা কম!");
+  }
+};
+
+
+document
+  .getElementById("closeMarket")
+  .addEventListener("click",()=>{
+
+    marketPanel.classList.add("hidden");
+  });
+
+
+document
+  .getElementById("closeGarage")
+  .addEventListener("click",()=>{
+
+    garagePanel.classList.add("hidden");
+  });
+
+
+/* =========================
+   DRAW MAP
+========================= */
+
+function draw(){
 
   ctx.clearRect(
     0,
@@ -1952,67 +737,468 @@ function render() {
     H
   );
 
-  updateCamera();
+  /*
+    Map-টি স্ক্রিনে fit করানো হচ্ছে।
+  */
+
+  const scale=
+    Math.min(
+      W/WORLD_W,
+      H/WORLD_H
+    );
+
+  const mapW=
+    WORLD_W*scale;
+
+  const mapH=
+    WORLD_H*scale;
+
+  /*
+    Camera follow effect
+  */
+
+  let obj=
+    mode==="drive"
+      ? truck
+      : player;
+
+  let offsetX=
+    W/2-obj.x*scale;
+
+  let offsetY=
+    H/2-obj.y*scale;
+
+  /*
+    Map boundaries
+  */
+
+  offsetX=
+    Math.min(
+      0,
+      Math.max(
+        W-mapW,
+        offsetX
+      )
+    );
+
+  offsetY=
+    Math.min(
+      0,
+      Math.max(
+        H-mapH,
+        offsetY
+      )
+    );
+
+
+  if(mapImage.complete && mapImage.naturalWidth){
+
+    ctx.drawImage(
+      mapImage,
+      offsetX,
+      offsetY,
+      mapW,
+      mapH
+    );
+
+  }else{
+
+    ctx.fillStyle="#4f8f43";
+
+    ctx.fillRect(
+      0,0,W,H
+    );
+
+    ctx.fillStyle="white";
+
+    ctx.font="22px Arial";
+
+    ctx.textAlign="center";
+
+    ctx.fillText(
+      "map.png লোড হচ্ছে...",
+      W/2,
+      H/2
+    );
+  }
+
+
+  /*
+    World → Screen
+  */
+
+  function screenPosition(x,y){
+
+    return {
+      x:x*scale+offsetX,
+      y:y*scale+offsetY
+    };
+  }
+
+
+  /*
+    TRUCK
+  */
+
+  if(mode==="drive"){
+
+    const p=
+      screenPosition(
+        truck.x,
+        truck.y
+      );
+
+    drawTruck(
+      p.x,
+      p.y,
+      scale,
+      truck.angle
+    );
+
+  }else{
+
+    /*
+      Truck parked
+    */
+
+    const p=
+      screenPosition(
+        truck.x,
+        truck.y
+      );
+
+    drawTruck(
+      p.x,
+      p.y,
+      scale,
+      truck.angle
+    );
+
+
+    /*
+      Player
+    */
+
+    const pp=
+      screenPosition(
+        player.x,
+        player.y
+      );
+
+    drawPlayer(
+      pp.x,
+      pp.y,
+      scale
+    );
+  }
+
+
+  /*
+    Location markers
+  */
+
+  drawMarker(
+    locations.usedMarket,
+    "🚛"
+  );
+
+  drawMarker(
+    locations.garage,
+    "🔧"
+  );
+
+  drawMarker(
+    locations.fuel,
+    "⛽"
+  );
+}
+
+
+/* =========================
+   TRUCK DRAW
+========================= */
+
+function drawTruck(x,y,scale,angle){
 
   ctx.save();
 
-  ctx.translate(
-    -camera.x,
-    -camera.y
+  ctx.translate(x,y);
+
+  ctx.rotate(angle);
+
+  const w=38*scale;
+  const h=62*scale;
+
+  /*
+    shadow
+  */
+
+  ctx.fillStyle="rgba(0,0,0,.35)";
+
+  ctx.fillRect(
+    -w/2+3,
+    -h/2+5,
+    w,
+    h
   );
 
-  drawWorld();
+  /*
+    body
+  */
+
+  ctx.fillStyle="#e53935";
+
+  ctx.fillRect(
+    -w/2,
+    -h/2,
+    w,
+    h*0.42
+  );
+
+  /*
+    cargo
+  */
+
+  ctx.fillStyle="#ffbd2e";
+
+  ctx.fillRect(
+    -w/2,
+    -h/2+h*0.42,
+    w,
+    h*0.58
+  );
+
+  /*
+    window
+  */
+
+  ctx.fillStyle="#9edcf5";
+
+  ctx.fillRect(
+    -w*.30,
+    -h*.36,
+    w*.60,
+    h*.18
+  );
+
+  /*
+    wheels
+  */
+
+  ctx.fillStyle="#151515";
+
+  ctx.fillRect(
+    -w*.65,
+    -h*.32,
+    w*.22,
+    h*.25
+  );
+
+  ctx.fillRect(
+    w*.43,
+    -h*.32,
+    w*.22,
+    h*.25
+  );
+
+  ctx.fillRect(
+    -w*.65,
+    h*.08,
+    w*.22,
+    h*.25
+  );
+
+  ctx.fillRect(
+    w*.43,
+    h*.08,
+    w*.22,
+    h*.25
+  );
 
   ctx.restore();
 }
 
-/* =========================
-   HUD
-========================= */
-
-function updateHUD() {
-
-  moneyEl.textContent =
-    Math.floor(save.money);
-
-  fuelEl.textContent =
-    Math.floor(save.fuel);
-
-  placeEl.textContent =
-    getLocationName();
-}
 
 /* =========================
-   GAME LOOP
+   PLAYER DRAW
 ========================= */
 
-function gameLoop() {
+function drawPlayer(x,y,scale){
 
-  movePlayer();
+  ctx.save();
 
-  moveTruck();
+  ctx.translate(x,y);
 
-  updateActionButton();
+  ctx.fillStyle="#ffd0a0";
 
-  updateHUD();
+  ctx.beginPath();
 
-  render();
-
-  requestAnimationFrame(
-    gameLoop
+  ctx.arc(
+    0,
+    -12*scale,
+    10*scale,
+    0,
+    Math.PI*2
   );
+
+  ctx.fill();
+
+  ctx.fillStyle="#1565c0";
+
+  ctx.fillRect(
+    -9*scale,
+    0,
+    18*scale,
+    25*scale
+  );
+
+  ctx.fillStyle="#222";
+
+  ctx.fillRect(
+    -10*scale,
+    25*scale,
+    7*scale,
+    15*scale
+  );
+
+  ctx.fillRect(
+    3*scale,
+    25*scale,
+    7*scale,
+    15*scale
+  );
+
+  ctx.restore();
 }
 
+
 /* =========================
-   START
+   MARKERS
 ========================= */
 
-modeEl.textContent =
-  "🚶 WALK";
+function drawMarker(loc,emoji){
 
-messageEl.textContent =
-  "🏪 Showroom-এর ভিতরে আছেন — 🚚 ট্রাকের কাছে যান।";
+  const scale=
+    Math.min(
+      W/WORLD_W,
+      H/WORLD_H
+    );
 
-updateHUD();
+  let obj=
+    mode==="drive"
+      ? truck
+      : player;
 
-gameLoop();
+  let offsetX=
+    W/2-obj.x*scale;
+
+  let offsetY=
+    H/2-obj.y*scale;
+
+  const mapW=
+    WORLD_W*scale;
+
+  const mapH=
+    WORLD_H*scale;
+
+  offsetX=
+    Math.min(
+      0,
+      Math.max(
+        W-mapW,
+        offsetX
+      )
+    );
+
+  offsetY=
+    Math.min(
+      0,
+      Math.max(
+        H-mapH,
+        offsetY
+      )
+    );
+
+  const x=
+    loc.x*scale+offsetX;
+
+  const y=
+    loc.y*scale+offsetY;
+
+  if(
+    x<-50 ||
+    x>W+50 ||
+    y<-50 ||
+    y>H+50
+  )
+    return;
+
+  ctx.save();
+
+  ctx.fillStyle="rgba(0,0,0,.8)";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x,
+    y,
+    22,
+    0,
+    Math.PI*2
+  );
+
+  ctx.fill();
+
+  ctx.font="20px Arial";
+
+  ctx.textAlign="center";
+
+  ctx.textBaseline="middle";
+
+  ctx.fillText(
+    emoji,
+    x,
+    y
+  );
+
+  ctx.restore();
+}
+
+
+/* =========================
+   LOOP
+========================= */
+
+function gameLoop(){
+
+  update();
+
+  draw();
+
+  requestAnimationFrame(gameLoop);
+}
+
+
+/* =========================
+   MAP LOAD
+========================= */
+
+mapImage.onload=()=>{
+
+  messageEl.textContent=
+    "🏪 Showroom থেকে শুরু করুন। 🚛 ট্রাক চালাতে নিচের বোতাম চাপুন।";
+
+  gameLoop();
+};
+
+
+mapImage.onerror=()=>{
+
+  messageEl.textContent=
+    "⚠️ map.png পাওয়া যাচ্ছে না। GitHub-এ map.png ঠিক আছে কিনা দেখুন।";
+
+  gameLoop();
+};
+
+
+updateUI();
