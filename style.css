@@ -1,308 +1,247 @@
-*{
-    box-sizing:border-box;
-    margin:0;
-    padding:0;
-    -webkit-tap-highlight-color:transparent;
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html,
-body{
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    background:#111;
-    font-family:Arial,sans-serif;
-    touch-action:none;
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #111;
+  font-family: Arial, sans-serif;
+  touch-action: none;
 }
 
-#game{
-    position:fixed;
-    inset:0;
-    overflow:hidden;
-    background:#75c9e5;
+#game {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
-#gameCanvas{
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    display:block;
+#gameCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 /* HUD */
 
-#hud{
-    position:absolute;
-    top:14px;
-    left:14px;
-    right:14px;
+#hud {
+  position: absolute;
+  top: 12px;
+  left: 12px;
 
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
+  display: flex;
+  gap: 8px;
 
-    gap:8px;
-    pointer-events:none;
+  z-index: 10;
 }
 
-.hudBox{
-    padding:11px 15px;
+.hudBox {
+  background: rgba(0, 0, 0, 0.70);
+  color: white;
 
-    color:white;
-    background:rgba(0,0,0,.78);
+  padding: 8px 11px;
+  border-radius: 10px;
 
-    border:1px solid rgba(255,255,255,.15);
-    border-radius:16px;
+  font-size: 14px;
+  font-weight: bold;
 
-    font-size:17px;
-    font-weight:bold;
-
-    box-shadow:0 5px 15px rgba(0,0,0,.3);
+  border: 1px solid rgba(255,255,255,0.18);
 }
 
-.truckHud{
-    max-width:170px;
-    overflow:hidden;
-    white-space:nowrap;
-    text-overflow:ellipsis;
+/* Location */
+
+#locationBox {
+  position: absolute;
+  top: 62px;
+  left: 12px;
+
+  padding: 8px 12px;
+
+  color: white;
+  background: rgba(0,0,0,0.65);
+
+  border-radius: 10px;
+
+  font-size: 14px;
+  font-weight: bold;
+
+  z-index: 10;
 }
 
-/* LOCATION */
+/* Message */
 
-#locationBox{
-    position:absolute;
+#message {
+  position: absolute;
 
-    top:78px;
-    right:14px;
+  top: 105px;
+  left: 50%;
 
-    padding:12px 20px;
+  transform: translateX(-50%);
 
-    color:white;
-    background:rgba(0,0,0,.78);
+  padding: 9px 15px;
 
-    border-radius:25px;
+  color: white;
+  background: rgba(0,0,0,0.72);
 
-    font-size:17px;
-    font-weight:bold;
+  border-radius: 10px;
 
-    box-shadow:0 5px 15px rgba(0,0,0,.3);
+  font-size: 14px;
+  text-align: center;
+
+  z-index: 10;
+
+  max-width: 80%;
 }
 
-/* MESSAGE */
+/* Interaction */
 
-#message{
-    position:absolute;
+.actionButton {
+  position: absolute;
 
-    left:50%;
-    bottom:145px;
+  right: 22px;
+  bottom: 155px;
 
-    transform:translateX(-50%);
+  width: 105px;
+  height: 50px;
 
-    width:min(90%,520px);
+  border: none;
+  border-radius: 25px;
 
-    padding:14px 18px;
+  background: rgba(255,255,255,0.90);
+  color: #111;
 
-    color:white;
-    background:rgba(0,0,0,.72);
+  font-size: 12px;
+  font-weight: bold;
 
-    border-radius:18px;
+  z-index: 20;
 
-    text-align:center;
-    font-size:17px;
-    font-weight:bold;
-
-    pointer-events:none;
-
-    transition:.2s;
+  display: none;
 }
 
-/* ACTION */
-
-.actionButton{
-    position:absolute;
-
-    right:20px;
-    bottom:145px;
-
-    min-width:145px;
-
-    padding:15px 20px;
-
-    border:0;
-    border-radius:18px;
-
-    color:white;
-    background:#1688ff;
-
-    font-size:17px;
-    font-weight:bold;
-
-    box-shadow:0 6px 18px rgba(0,0,0,.35);
-
-    display:none;
+.actionButton:active {
+  transform: scale(0.92);
 }
 
-.actionButton:active{
-    transform:scale(.94);
+/* Controls */
+
+#controls {
+  position: absolute;
+
+  left: 0;
+  right: 0;
+  bottom: 18px;
+
+  height: 145px;
+
+  z-index: 20;
+
+  pointer-events: none;
 }
 
-/* CONTROLS */
+/* D-pad */
 
-#controls{
-    position:absolute;
+.dpad {
+  position: absolute;
 
-    left:0;
-    right:0;
-    bottom:18px;
+  left: 18px;
+  bottom: 0;
 
-    height:125px;
+  width: 145px;
+  height: 135px;
 
-    pointer-events:none;
+  pointer-events: auto;
 }
 
-/* D-PAD */
+.dpad button {
+  width: 45px;
+  height: 45px;
 
-.dpad{
-    position:absolute;
+  border: none;
 
-    left:18px;
-    bottom:0;
+  border-radius: 12px;
 
-    width:150px;
-    height:125px;
+  background: rgba(0,0,0,0.68);
+  color: white;
 
-    pointer-events:auto;
+  font-size: 21px;
+  font-weight: bold;
+
+  margin: 2px;
+
+  user-select: none;
+  touch-action: none;
 }
 
-.dpad button{
-    width:50px;
-    height:50px;
-
-    border:2px solid rgba(255,255,255,.9);
-    border-radius:15px;
-
-    background:rgba(0,0,0,.72);
-    color:white;
-
-    font-size:22px;
-    font-weight:bold;
-
-    box-shadow:0 5px 12px rgba(0,0,0,.35);
+.dpad > button {
+  display: block;
+  margin: auto;
 }
 
-.dpad button:active{
-    background:rgba(30,130,255,.85);
-    transform:scale(.92);
+.dpad > div {
+  display: flex;
+  justify-content: center;
 }
 
-#up{
-    display:block;
-    margin:0 auto 5px;
+/* Right buttons */
+
+.gameButtons {
+  position: absolute;
+
+  right: 18px;
+  bottom: 0;
+
+  display: flex;
+  gap: 9px;
+
+  pointer-events: auto;
 }
 
-.dpad div{
-    display:flex;
-    justify-content:center;
-    gap:5px;
+.gameButtons button {
+  width: 55px;
+  height: 55px;
+
+  border: none;
+
+  border-radius: 50%;
+
+  background: rgba(0,0,0,0.68);
+  color: white;
+
+  font-size: 22px;
+
+  user-select: none;
+  touch-action: none;
 }
 
-/* RIGHT BUTTONS */
-
-.gameButtons{
-    position:absolute;
-
-    right:18px;
-    bottom:0;
-
-    display:flex;
-    gap:10px;
-
-    pointer-events:auto;
+.gameButtons button:active,
+.dpad button:active {
+  transform: scale(0.90);
+  background: rgba(255,255,255,0.30);
 }
 
-.gameButtons button{
-    width:58px;
-    height:58px;
+/* Desktop */
 
-    border:2px solid white;
-    border-radius:50%;
+@media (min-width: 800px) {
 
-    background:rgba(0,0,0,.72);
+  .dpad {
+    left: 35px;
+  }
 
-    color:white;
-    font-size:25px;
+  .gameButtons {
+    right: 35px;
+  }
 
-    box-shadow:0 5px 12px rgba(0,0,0,.35);
-}
-
-.gameButtons button:active{
-    background:rgba(30,130,255,.85);
-    transform:scale(.92);
-}
-
-/* SMALL PHONES */
-
-@media(max-width:420px){
-
-    .hudBox{
-        padding:9px 11px;
-        font-size:14px;
-    }
-
-    .truckHud{
-        max-width:120px;
-    }
-
-    #locationBox{
-        top:68px;
-        font-size:14px;
-        padding:10px 14px;
-    }
-
-    #message{
-        bottom:142px;
-        font-size:14px;
-        padding:11px 13px;
-    }
-
-    .actionButton{
-        right:12px;
-        bottom:142px;
-        min-width:125px;
-        padding:12px 15px;
-        font-size:14px;
-    }
-
-    .dpad{
-        left:10px;
-    }
-
-    .gameButtons{
-        right:10px;
-        gap:6px;
-    }
-
-    .gameButtons button{
-        width:52px;
-        height:52px;
-        font-size:21px;
-    }
-}
-
-/* LANDSCAPE */
-
-@media(orientation:landscape){
-
-    #controls{
-        bottom:10px;
-    }
-
-    #message{
-        bottom:105px;
-    }
-
-    .actionButton{
-        bottom:105px;
-    }
+  .gameButtons button {
+    width: 62px;
+    height: 62px;
+  }
 }
