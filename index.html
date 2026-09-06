@@ -1,92 +1,81 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
-<title>Truck Dealer 3D</title>
+  <title>Truck Dealer 3D</title>
 
-<link rel="stylesheet" href="style.css">
-
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-      <script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
-  }
-}
-</script>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
 <div id="game">
 
-    <canvas id="gameCanvas"></canvas>
+  <canvas id="gameCanvas"></canvas>
 
-    <!-- HUD -->
-    <div id="hud">
+  <!-- HUD -->
+  <div id="hud">
 
-        <div class="hudBox">
-            💰 <span id="money">380000</span> ৳
-        </div>
+    <div class="hudBox">
+      💰 <span id="money">380000</span>
+    </div>
 
-        <div class="hudBox">
-            ⛽ <span id="fuel">98</span>%
-        </div>
+    <div class="hudBox">
+      ⛽ <span id="fuel">98</span>%
+    </div>
 
-        <div class="hudBox truckHud">
-            🚛 <span id="truckName">Mini Truck</span>
-        </div>
+    <div class="hudBox">
+      🚛 <span id="truckName">Mini Truck</span>
+    </div>
+
+  </div>
+
+  <div id="locationBox">
+    🏪 Showroom
+  </div>
+
+  <div id="message">
+    Showroom থেকে বের হয়ে আসুন
+  </div>
+
+  <!-- Interaction -->
+  <button id="actionButton" class="actionButton">
+    ✋ INTERACT
+  </button>
+
+  <!-- Mobile controls -->
+  <div id="controls">
+
+    <div class="dpad">
+
+      <button id="up">▲</button>
+
+      <div>
+        <button id="left">◀</button>
+        <button id="down">▼</button>
+        <button id="right">▶</button>
+      </div>
 
     </div>
 
-    <!-- Location -->
-    <div id="locationBox">
-        🏪 Showroom
-    </div>
+    <div class="gameButtons">
 
-    <!-- Message -->
-    <div id="message">
-        🏪 Showroom থেকে শুরু করুন
-    </div>
+      <button id="runButton">🏃</button>
 
-    <!-- Interaction -->
-    <button id="actionButton" class="actionButton">
-        🚶 হাঁটুন
-    </button>
+      <button id="handButton">✋</button>
 
-    <!-- Controls -->
-    <div id="controls">
-
-        <div class="dpad">
-
-            <button id="up">▲</button>
-
-            <div>
-                <button id="left">◀</button>
-                <button id="down">▼</button>
-                <button id="right">▶</button>
-            </div>
-
-        </div>
-
-        <div class="gameButtons">
-
-            <button id="runButton">🏃</button>
-
-            <button id="handButton">✋</button>
-
-            <button id="truckButton">🚛</button>
-
-        </div>
+      <button id="truckButton">🚛</button>
 
     </div>
+
+  </div>
 
 </div>
 
-<script src="game.js"></script>
+<script type="module" src="game.js"></script>
 
 </body>
 </html>
