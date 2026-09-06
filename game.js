@@ -1,800 +1,695 @@
-const canvas =
-  document.getElementById("canvas");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-const ctx =
-  canvas.getContext("2d");
+const moneyEl = document.getElementById("money");
+const fuelEl = document.getElementById("fuel");
+const placeEl = document.getElementById("place");
+const messageEl = document.getElementById("message");
+const actionBtn = document.getElementById("actionBtn");
+const modeEl = document.getElementById("mode");
 
-
-/* =================================
-   SCREEN
-================================= */
-
-let W = 0;
-let H = 0;
+let W = innerWidth;
+let H = innerHeight;
 
 function resize() {
-
-  W = window.innerWidth;
-  H = window.innerHeight;
+  W = innerWidth;
+  H = innerHeight;
 
   canvas.width = W;
   canvas.height = H;
 }
 
-window.addEventListener(
-  "resize",
-  resize
-);
-
+addEventListener("resize", resize);
 resize();
 
+/* =========================
+   SAVE
+========================= */
 
-/* =================================
-   HUD
-================================= */
-
-const moneyEl =
-  document.getElementById("money");
-
-const fuelEl =
-  document.getElementById("fuel");
-
-const placeEl =
-  document.getElementById("place");
-
-const messageEl =
-  document.getElementById("message");
-
-const actionBtn =
-  document.getElementById("actionBtn");
-
-const modeEl =
-  document.getElementById("mode");
-
-
-/* =================================
-   SAVE DATA
-================================= */
-
-let save =
-  JSON.parse(
-    localStorage.getItem(
-      "truckDealerGame"
-    )
-  );
-
+let save = JSON.parse(
+  localStorage.getItem("truckDealerGame")
+);
 
 if (!save) {
-
   save = {
-
     money: 380000,
-
     fuel: 100
   };
 }
 
-
 function saveGame() {
-
   localStorage.setItem(
-
     "truckDealerGame",
-
     JSON.stringify(save)
   );
 }
 
-
-function updateHUD() {
-
-  moneyEl.textContent =
-    Math.floor(save.money);
-
-  fuelEl.textContent =
-    Math.floor(save.fuel);
-
-  placeEl.textContent =
-    getLocationName();
-}
-
-
-/* =================================
+/* =========================
    WORLD
-================================= */
+========================= */
 
 const WORLD_WIDTH = 3200;
 const WORLD_HEIGHT = 2200;
 
+/* =========================
+   MAIN LOCATIONS
+========================= */
 
-/* =================================
-   BUILDINGS
-================================= */
+/*
+   SHOWROOM
+   সামনে রাস্তার দিকে বড় Gate
+*/
 
 const showroom = {
-
-  x: 280,
+  x: 350,
   y: 180,
-
-  w: 600,
-  h: 370
+  w: 620,
+  h: 470
 };
 
+/*
+   MARKET
+*/
 
 const market = {
-
-  x: 2350,
+  x: 2250,
   y: 180,
-
-  w: 560,
-  h: 320
+  w: 600,
+  h: 330
 };
 
+/*
+   GARAGE
+   নিচের দিকে বড় Garage
+*/
 
 const garage = {
-
-  x: 2350,
-  y: 1660,
-
-  w: 560,
-  h: 300
+  x: 2200,
+  y: 1250,
+  w: 650,
+  h: 380
 };
 
+/*
+   WORKER OFFICE
+*/
 
 const office = {
-
-  x: 280,
-  y: 1660,
-
-  w: 560,
-  h: 300
+  x: 350,
+  y: 1350,
+  w: 600,
+  h: 330
 };
 
+/* =========================
+   ROAD SYSTEM
+========================= */
 
-/* =================================
+/*
+   Main road:
+   Y 720 - 900
+
+   Vertical road:
+   X 1200 - 1420
+
+   Lower road:
+   Y 1080 - 1190
+*/
+
+/* =========================
    PLAYER
-================================= */
+========================= */
 
 const player = {
-
-  x: 580,
-  y: 330,
-
+  x: 660,
+  y: 390,
   width: 28,
-  height: 28,
-
+  height: 30,
   speed: 4
 };
 
-
-/* =================================
+/* =========================
    TRUCK
-================================= */
+========================= */
 
 const truck = {
-
-  x: 580,
-  y: 450,
-
+  x: 660,
+  y: 555,
   width: 58,
-  height: 100,
-
+  height: 105,
   speed: 6,
-
   angle: 0
 };
 
-
 let driving = false;
 
-
-/* =================================
+/* =========================
    CAMERA
-================================= */
+========================= */
 
 const camera = {
-
   x: 0,
   y: 0
 };
 
-
-/* =================================
-   INPUT
-================================= */
+/* =========================
+   CONTROLS
+========================= */
 
 const keys = {
-
   up: false,
   down: false,
   left: false,
   right: false
 };
 
+document.querySelectorAll(".control").forEach(btn => {
 
-/* =================================
-   TOUCH BUTTONS
-================================= */
+  const key = btn.dataset.key;
 
-document
-.querySelectorAll(".control")
-.forEach(button => {
-
-  const key =
-    button.dataset.key;
-
-
-  function start(e) {
-
+  function down(e) {
     e.preventDefault();
-
     keys[key] = true;
   }
 
-
-  function stop(e) {
-
+  function up(e) {
     e.preventDefault();
-
     keys[key] = false;
   }
 
-
-  button.addEventListener(
+  btn.addEventListener(
     "touchstart",
-    start,
+    down,
     { passive: false }
   );
 
-
-  button.addEventListener(
+  btn.addEventListener(
     "touchend",
-    stop,
+    up,
     { passive: false }
   );
 
-
-  button.addEventListener(
+  btn.addEventListener(
     "touchcancel",
-    stop,
+    up,
     { passive: false }
   );
 
-
-  button.addEventListener(
+  btn.addEventListener(
     "mousedown",
-    start
+    down
   );
 
-
-  button.addEventListener(
+  btn.addEventListener(
     "mouseup",
-    stop
+    up
   );
 
-
-  button.addEventListener(
+  btn.addEventListener(
     "mouseleave",
-    stop
+    up
   );
-
 });
 
+/* Keyboard */
 
-/* =================================
-   KEYBOARD
-================================= */
+addEventListener("keydown", e => {
 
-document.addEventListener(
-  "keydown",
-  e => {
+  if (
+    e.key === "ArrowUp" ||
+    e.key.toLowerCase() === "w"
+  )
+    keys.up = true;
 
-    const k =
-      e.key.toLowerCase();
+  if (
+    e.key === "ArrowDown" ||
+    e.key.toLowerCase() === "s"
+  )
+    keys.down = true;
 
+  if (
+    e.key === "ArrowLeft" ||
+    e.key.toLowerCase() === "a"
+  )
+    keys.left = true;
 
-    if (
-      e.key === "ArrowUp" ||
-      k === "w"
-    )
-      keys.up = true;
+  if (
+    e.key === "ArrowRight" ||
+    e.key.toLowerCase() === "d"
+  )
+    keys.right = true;
+});
 
+addEventListener("keyup", e => {
 
-    if (
-      e.key === "ArrowDown" ||
-      k === "s"
-    )
-      keys.down = true;
+  if (
+    e.key === "ArrowUp" ||
+    e.key.toLowerCase() === "w"
+  )
+    keys.up = false;
 
+  if (
+    e.key === "ArrowDown" ||
+    e.key.toLowerCase() === "s"
+  )
+    keys.down = false;
 
-    if (
-      e.key === "ArrowLeft" ||
-      k === "a"
-    )
-      keys.left = true;
+  if (
+    e.key === "ArrowLeft" ||
+    e.key.toLowerCase() === "a"
+  )
+    keys.left = false;
 
+  if (
+    e.key === "ArrowRight" ||
+    e.key.toLowerCase() === "d"
+  )
+    keys.right = false;
+});
 
-    if (
-      e.key === "ArrowRight" ||
-      k === "d"
-    )
-      keys.right = true;
-
-  }
-);
-
-
-document.addEventListener(
-  "keyup",
-  e => {
-
-    const k =
-      e.key.toLowerCase();
-
-
-    if (
-      e.key === "ArrowUp" ||
-      k === "w"
-    )
-      keys.up = false;
-
-
-    if (
-      e.key === "ArrowDown" ||
-      k === "s"
-    )
-      keys.down = false;
-
-
-    if (
-      e.key === "ArrowLeft" ||
-      k === "a"
-    )
-      keys.left = false;
-
-
-    if (
-      e.key === "ArrowRight" ||
-      k === "d"
-    )
-      keys.right = false;
-
-  }
-);
-
-
-/* =================================
+/* =========================
    HOUSES
-================================= */
+========================= */
 
 const houses = [];
 
-
 const houseColors = [
-
-  "#d99a72",
-  "#d9b46c",
-  "#82a9c9",
-  "#b889a7",
-  "#86b57c",
-  "#c7b98c"
+  "#dba46e",
+  "#82a8c9",
+  "#c78da9",
+  "#88b879",
+  "#d0bd82",
+  "#a890c7"
 ];
 
-
-function createHouse(
-  x,
-  y,
-  w,
-  h,
-  color
-) {
-
+function addHouse(x, y, w, h, color) {
   houses.push({
-
     x,
     y,
     w,
     h,
-
     color
   });
 }
 
-
-/* =================================
-   ROADS
-================================= */
-
 /*
-   Main horizontal road:
-   y = 700 → 900
-
-   Secondary horizontal:
-   y = 1100 → 1210
-
-   Main vertical:
-   x = 1250 → 1450
+   IMPORTANT:
+   Showroom-এর জায়গা ফাঁকা রাখা হয়েছে।
 */
 
+/* উপরের বাম এলাকা */
 
-/* houses above main road */
+addHouse(40, 220, 190, 140, houseColors[0]);
+addHouse(40, 420, 190, 140, houseColors[1]);
 
-for (
-  let x = 30;
-  x < WORLD_WIDTH;
-  x += 250
-) {
+addHouse(1050, 180, 190, 140, houseColors[2]);
+addHouse(1050, 390, 190, 140, houseColors[3]);
 
-  if (
-    x < 1050 ||
-    x > 1600
-  ) {
+/* রাস্তার নিচে */
 
-    createHouse(
+addHouse(40, 960, 190, 140, houseColors[4]);
+addHouse(300, 960, 190, 140, houseColors[5]);
 
-      x,
-      500,
+addHouse(580, 960, 190, 140, houseColors[0]);
+addHouse(850, 960, 190, 140, houseColors[1]);
 
-      170,
-      130,
+/* ডান পাশে */
 
-      houseColors[
-        Math.floor(
-          x / 250
-        ) %
-        houseColors.length
-      ]
-    );
-  }
-}
+addHouse(1540, 200, 190, 140, houseColors[2]);
+addHouse(1770, 400, 190, 140, houseColors[3]);
 
+addHouse(1540, 960, 190, 140, houseColors[4]);
+addHouse(1770, 960, 190, 140, houseColors[5]);
 
-/* houses below main road */
+/* নিচের শহর */
 
-for (
-  let x = 30;
-  x < WORLD_WIDTH;
-  x += 270
-) {
+addHouse(40, 1760, 190, 140, houseColors[0]);
+addHouse(300, 1760, 190, 140, houseColors[1]);
 
-  if (
-    x < 1050 ||
-    x > 1600
-  ) {
+addHouse(1050, 1760, 190, 140, houseColors[2]);
+addHouse(1450, 1760, 190, 140, houseColors[3]);
 
-    createHouse(
-
-      x + 50,
-      930,
-
-      180,
-      130,
-
-      houseColors[
-        (
-          Math.floor(
-            x / 270
-          ) + 2
-        ) %
-        houseColors.length
-      ]
-    );
-  }
-}
-
-
-/* houses around vertical road */
-
-for (
-  let y = 40;
-  y < WORLD_HEIGHT;
-  y += 250
-) {
-
-  if (
-    y < 620 ||
-    y > 1280
-  ) {
-
-    createHouse(
-
-      950,
-      y,
-
-      180,
-      130,
-
-      houseColors[
-        Math.floor(
-          y / 250
-        ) %
-        houseColors.length
-      ]
-    );
-
-
-    createHouse(
-
-      1490,
-      y + 60,
-
-      180,
-      130,
-
-      houseColors[
-        (
-          Math.floor(
-            y / 250
-          ) + 3
-        ) %
-        houseColors.length
-      ]
-    );
-
-  }
-}
-
-
-/* =================================
+/* =========================
    SHOPS
-================================= */
+========================= */
 
 const shops = [
-
   {
     x: 40,
-    y: 735,
-
+    y: 650,
     w: 150,
-    h: 105,
-
-    name: "GROCERY",
-
+    h: 100,
+    name: "SHOP",
     color: "#c62828"
   },
 
   {
-    x: 260,
-    y: 735,
-
+    x: 200,
+    y: 650,
     w: 150,
-    h: 105,
-
+    h: 100,
     name: "CAFE",
-
     color: "#6d4c41"
   },
 
   {
-    x: 1700,
-    y: 735,
-
+    x: 1600,
+    y: 650,
     w: 170,
-    h: 105,
-
+    h: 100,
     name: "PARTS",
-
     color: "#546e7a"
   },
 
   {
-    x: 1950,
-    y: 735,
-
+    x: 1810,
+    y: 650,
     w: 170,
-    h: 105,
-
+    h: 100,
     name: "FOOD",
-
     color: "#ad1457"
   }
 ];
 
-
-/* =================================
+/* =========================
    TREES
-================================= */
+========================= */
 
 const trees = [];
 
-
-for (
-  let x = 30;
-  x < WORLD_WIDTH;
-  x += 130
-) {
-
+function addTree(x, y, size = 28) {
   trees.push({
-
-    x: x,
-
-    y: 650,
-
-    size: 25
-  });
-
-
-  trees.push({
-
-    x: x + 45,
-
-    y: 1080,
-
-    size: 25
-  });
-}
-
-
-for (
-  let y = 40;
-  y < WORLD_HEIGHT;
-  y += 130
-) {
-
-  trees.push({
-
-    x: 1170,
-
+    x,
     y,
-
-    size: 26
-  });
-
-
-  trees.push({
-
-    x: 1530,
-
-    y: y + 50,
-
-    size: 26
+    size
   });
 }
 
+for (let x = 20; x < WORLD_WIDTH; x += 150) {
 
-/* =================================
-   COLLISION
-================================= */
+  if (
+    x < 300 ||
+    x > 1000
+  ) {
+    addTree(x, 620);
+  }
 
-function rectangleCollision(
-  object,
-  b
+  addTree(x + 50, 1030);
+}
+
+for (
+  let y = 50;
+  y < WORLD_HEIGHT;
+  y += 150
 ) {
+
+  if (
+    y < 600 ||
+    y > 1200
+  ) {
+    addTree(1150, y);
+    addTree(1480, y + 50);
+  }
+}
+
+/* =========================
+   COLLISION RECTANGLES
+========================= */
+
+function buildingCollisionRects() {
+
+  const result = [];
+
+  /*
+     SHOWROOM WALLS
+
+     Gate:
+     X 580 - 740
+     Y 610 - 680
+
+     এই অংশ খোলা থাকবে।
+  */
+
+  result.push({
+
+    x: showroom.x,
+    y: showroom.y,
+    w: showroom.w,
+    h: 25
+  });
+
+  result.push({
+
+    x: showroom.x,
+    y: showroom.y,
+    w: 25,
+    h: showroom.h
+  });
+
+  result.push({
+
+    x: showroom.x + showroom.w - 25,
+    y: showroom.y,
+    w: 25,
+    h: showroom.h
+  });
+
+  /* showroom bottom wall - gate বাদ */
+
+  result.push({
+
+    x: showroom.x,
+    y: showroom.y + showroom.h - 25,
+    w: 230,
+    h: 25
+  });
+
+  result.push({
+
+    x: showroom.x + 390,
+    y: showroom.y + showroom.h - 25,
+    w: 230,
+    h: 25
+  });
+
+  /*
+     MARKET
+  */
+
+  result.push({
+    x: market.x,
+    y: market.y,
+    w: market.w,
+    h: 25
+  });
+
+  result.push({
+    x: market.x,
+    y: market.y,
+    w: 25,
+    h: market.h
+  });
+
+  result.push({
+    x: market.x + market.w - 25,
+    y: market.y,
+    w: 25,
+    h: market.h
+  });
+
+  result.push({
+    x: market.x,
+    y: market.y + market.h - 25,
+    w: market.w,
+    h: 25
+  });
+
+  /*
+     GARAGE
+     সামনে বড় Garage Gate
+  */
+
+  result.push({
+    x: garage.x,
+    y: garage.y,
+    w: 230,
+    h: 25
+  });
+
+  result.push({
+    x: garage.x + 420,
+    y: garage.y,
+    w: 230,
+    h: 25
+  });
+
+  result.push({
+    x: garage.x,
+    y: garage.y,
+    w: 25,
+    h: garage.h
+  });
+
+  result.push({
+    x: garage.x + garage.w - 25,
+    y: garage.y,
+    w: 25,
+    h: garage.h
+  });
+
+  result.push({
+    x: garage.x,
+    y: garage.y + garage.h - 25,
+    w: garage.w,
+    h: 25
+  });
+
+  /*
+     OFFICE
+  */
+
+  result.push({
+    x: office.x,
+    y: office.y,
+    w: office.w,
+    h: 25
+  });
+
+  result.push({
+    x: office.x,
+    y: office.y,
+    w: 25,
+    h: office.h
+  });
+
+  result.push({
+    x: office.x + office.w - 25,
+    y: office.y,
+    w: 25,
+    h: office.h
+  });
+
+  result.push({
+    x: office.x,
+    y: office.y + office.h - 25,
+    w: office.w,
+    h: 25
+  });
+
+  return result;
+}
+
+/* =========================
+   RECTANGLE COLLISION
+========================= */
+
+function collision(a, b) {
 
   return (
-
-    object.x -
-      object.width / 2
-      <
-      b.x + b.w
-
-    &&
-
-    object.x +
-      object.width / 2
-      >
-      b.x
-
-    &&
-
-    object.y -
-      object.height / 2
-      <
-      b.y + b.h
-
-    &&
-
-    object.y +
-      object.height / 2
-      >
-      b.y
-
+    a.x - a.width / 2 < b.x + b.w &&
+    a.x + a.width / 2 > b.x &&
+    a.y - a.height / 2 < b.y + b.h &&
+    a.y + a.height / 2 > b.y
   );
 }
 
-
-function collisionObjects() {
-
-  return [
-
-    ...houses,
-
-    ...shops
-
-  ];
-}
-
-
-function canMove(
-  object,
-  newX,
-  newY
-) {
+function canMove(object, x, y) {
 
   const test = {
-
-    x: newX,
-
-    y: newY,
-
-    width:
-      object.width,
-
-    height:
-      object.height
+    x,
+    y,
+    width: object.width,
+    height: object.height
   };
 
+  /*
+     Buildings
+  */
 
   for (
-    const building
-    of collisionObjects()
+    const b
+    of buildingCollisionRects()
   ) {
 
     if (
-      rectangleCollision(
-        test,
-        building
-      )
+      collision(test, b)
     ) {
 
       return false;
     }
   }
 
+  /*
+     Houses
+  */
+
+  for (
+    const h
+    of houses
+  ) {
+
+    if (
+      collision(test, h)
+    ) {
+
+      return false;
+    }
+  }
+
+  /*
+     Shops
+  */
+
+  for (
+    const s
+    of shops
+  ) {
+
+    if (
+      collision(test, s)
+    ) {
+
+      return false;
+    }
+  }
 
   return true;
 }
 
-
-/* =================================
+/* =========================
    WORLD LIMIT
-================================= */
+========================= */
 
 function limitWorld(o) {
 
-  const halfW =
-    o.width / 2;
-
-  const halfH =
-    o.height / 2;
-
-
   o.x = Math.max(
-
-    halfW,
-
+    o.width / 2,
     Math.min(
-      WORLD_WIDTH - halfW,
+      WORLD_WIDTH - o.width / 2,
       o.x
     )
   );
 
-
   o.y = Math.max(
-
-    halfH,
-
+    o.height / 2,
     Math.min(
-      WORLD_HEIGHT - halfH,
+      WORLD_HEIGHT - o.height / 2,
       o.y
     )
   );
 }
 
-
-/* =================================
+/* =========================
    PLAYER MOVEMENT
-================================= */
+========================= */
 
 function movePlayer() {
 
   if (driving)
     return;
 
-
   let dx = 0;
   let dy = 0;
-
 
   if (keys.up)
     dy -= 1;
@@ -808,13 +703,11 @@ function movePlayer() {
   if (keys.right)
     dx += 1;
 
-
   if (
     dx === 0 &&
     dy === 0
   )
     return;
-
 
   const length =
     Math.sqrt(
@@ -822,25 +715,16 @@ function movePlayer() {
       dy * dy
     );
 
-
   dx /= length;
   dy /= length;
-
 
   const nx =
     player.x +
     dx * player.speed;
 
-
   const ny =
     player.y +
     dy * player.speed;
-
-
-  /*
-     X এবং Y আলাদা করে পরীক্ষা করছি।
-     এতে দেয়ালের পাশে আটকে যাবে না।
-  */
 
   if (
     canMove(
@@ -853,7 +737,6 @@ function movePlayer() {
     player.x = nx;
   }
 
-
   if (
     canMove(
       player,
@@ -865,77 +748,58 @@ function movePlayer() {
     player.y = ny;
   }
 
-
   limitWorld(player);
 }
 
-
-/* =================================
+/* =========================
    TRUCK MOVEMENT
-================================= */
+========================= */
 
 function moveTruck() {
 
   if (!driving)
     return;
 
-
   if (
     save.fuel <= 0
   ) {
 
     messageEl.textContent =
-      "⛽ Fuel শেষ!";
+      "⛽ Fuel শেষ! Garage-এ যান।";
 
     return;
   }
 
-
-  /* steering */
-
   if (keys.left) {
 
-    truck.angle -=
-      0.055;
+    truck.angle -= 0.055;
   }
-
 
   if (keys.right) {
 
-    truck.angle +=
-      0.055;
+    truck.angle += 0.055;
   }
-
 
   let speed = 0;
 
-
   if (keys.up)
     speed = truck.speed;
-
 
   if (keys.down)
     speed =
       -truck.speed * 0.55;
 
-
   if (speed !== 0) {
 
     const nx =
       truck.x +
-      Math.sin(
-        truck.angle
-      ) *
+      Math.sin(truck.angle) *
       speed;
-
 
     const ny =
       truck.y -
-      Math.cos(
-        truck.angle
-      ) *
+      Math.cos(truck.angle) *
       speed;
-
 
     if (
       canMove(
@@ -946,44 +810,37 @@ function moveTruck() {
     ) {
 
       truck.x = nx;
-
       truck.y = ny;
 
-      save.fuel -=
-        0.025;
+      save.fuel -= 0.02;
 
       if (
         save.fuel < 0
-      )
+      ) {
+
         save.fuel = 0;
+      }
 
       saveGame();
     }
   }
 
-
   limitWorld(truck);
 }
 
-
-/* =================================
-   ENTER TRUCK
-================================= */
+/* =========================
+   TRUCK ENTER / EXIT
+========================= */
 
 function truckDistance() {
 
   return Math.hypot(
-
-    player.x -
-      truck.x,
-
-    player.y -
-      truck.y
+    player.x - truck.x,
+    player.y - truck.y
   );
 }
 
-
-function checkTruckButton() {
+function updateActionButton() {
 
   if (driving) {
 
@@ -995,7 +852,6 @@ function checkTruckButton() {
 
     return;
   }
-
 
   if (
     truckDistance() < 150
@@ -1014,28 +870,22 @@ function checkTruckButton() {
   }
 }
 
-
 actionBtn.addEventListener(
   "click",
   () => {
-
-    /* নামা */
 
     if (driving) {
 
       driving = false;
 
-
       player.x =
-        truck.x + 65;
+        truck.x + 70;
 
       player.y =
         truck.y;
 
-
       modeEl.textContent =
         "🚶 WALK";
-
 
       messageEl.textContent =
         "🚶 আপনি ট্রাক থেকে নেমেছেন।";
@@ -1043,49 +893,34 @@ actionBtn.addEventListener(
       return;
     }
 
-
-    /* ওঠা */
-
     if (
       truckDistance() < 150
     ) {
 
       driving = true;
 
-
       modeEl.textContent =
         "🚚 DRIVING";
 
-
       messageEl.textContent =
-        "🚚 ট্রাক চালান!";
-
+        "🚚 এখন ট্রাক চালান।";
     }
-
   }
 );
 
-
-/* =================================
+/* =========================
    LOCATION
-================================= */
+========================= */
 
-function inside(
-  o,
-  b
-) {
+function inside(o, b) {
 
   return (
-
     o.x > b.x &&
     o.x < b.x + b.w &&
-
     o.y > b.y &&
     o.y < b.y + b.h
-
   );
 }
-
 
 function getLocationName() {
 
@@ -1094,57 +929,39 @@ function getLocationName() {
       ? truck
       : player;
 
-
   if (
-    inside(
-      o,
-      showroom
-    )
+    inside(o, showroom)
   )
     return "🏪 Showroom";
 
-
   if (
-    inside(
-      o,
-      market
-    )
+    inside(o, market)
   )
-    return "🚛 Truck Market";
-
+    return "🚛 Market";
 
   if (
-    inside(
-      o,
-      garage
-    )
+    inside(o, garage)
   )
     return "🔧 Garage";
 
-
   if (
-    inside(
-      o,
-      office
-    )
+    inside(o, office)
   )
     return "👷 Worker Office";
-
 
   return "🛣️ Road";
 }
 
-
-/* =================================
-   DRAW ROAD
-================================= */
+/* =========================
+   ROAD DRAW
+========================= */
 
 function drawRoads() {
 
-  /* grass */
+  /* Grass */
 
   ctx.fillStyle =
-    "#5b9d49";
+    "#5d9f4c";
 
   ctx.fillRect(
     0,
@@ -1153,142 +970,140 @@ function drawRoads() {
     WORLD_HEIGHT
   );
 
-
-  /* main road */
+  /* Main road */
 
   ctx.fillStyle =
-    "#505050";
+    "#4e4e4e";
 
   ctx.fillRect(
-
     0,
-    700,
-
+    720,
     WORLD_WIDTH,
-    200
+    180
   );
 
-
-  /* vertical road */
+  /* Vertical road */
 
   ctx.fillRect(
-
-    1250,
+    1200,
     0,
-
-    200,
+    220,
     WORLD_HEIGHT
   );
 
-
-  /* lower road */
+  /* Lower road */
 
   ctx.fillRect(
-
     0,
-    1100,
-
+    1080,
     WORLD_WIDTH,
     110
   );
 
-
-  /* sidewalks */
+  /* Sidewalk */
 
   ctx.fillStyle =
-    "#bcbcbc";
-
+    "#bdbdbd";
 
   ctx.fillRect(
-
     0,
-    675,
-
+    695,
     WORLD_WIDTH,
     25
   );
 
-
   ctx.fillRect(
-
     0,
     900,
-
     WORLD_WIDTH,
     25
   );
 
-
   ctx.fillRect(
-
-    1225,
+    1175,
     0,
-
     25,
     WORLD_HEIGHT
   );
 
-
   ctx.fillRect(
-
-    1450,
+    1420,
     0,
-
     25,
     WORLD_HEIGHT
   );
 
-
-  /* road markings */
+  /* Road lines */
 
   ctx.strokeStyle =
-    "#f4d35e";
+    "#f5d85a";
 
   ctx.lineWidth = 7;
 
   ctx.setLineDash([
-    55,
-    35
+    60,
+    40
   ]);
-
 
   ctx.beginPath();
 
   ctx.moveTo(
     0,
-    800
+    810
   );
 
   ctx.lineTo(
     WORLD_WIDTH,
-    800
+    810
   );
 
   ctx.stroke();
 
-
   ctx.beginPath();
 
   ctx.moveTo(
-    1350,
+    1310,
     0
   );
 
   ctx.lineTo(
-    1350,
+    1310,
     WORLD_HEIGHT
   );
 
   ctx.stroke();
 
-
   ctx.setLineDash([]);
+
+  /*
+     Showroom driveway
+  */
+
+  ctx.fillStyle =
+    "#555";
+
+  ctx.fillRect(
+    580,
+    625,
+    160,
+    100
+  );
+
+  /*
+     Garage driveway
+  */
+
+  ctx.fillRect(
+    2430,
+    925,
+    160,
+    325
+  );
 }
 
-
-/* =================================
-   DRAW HOUSE
-================================= */
+/* =========================
+   HOUSE DRAW
+========================= */
 
 function drawHouse(h) {
 
@@ -1298,37 +1113,28 @@ function drawHouse(h) {
     "rgba(0,0,0,.25)";
 
   ctx.fillRect(
-
-    h.x + 9,
-
-    h.y + 12,
-
+    h.x + 8,
+    h.y + 10,
     h.w,
-
     h.h
   );
 
-
-  /* house */
+  /* building */
 
   ctx.fillStyle =
     h.color;
 
   ctx.fillRect(
-
     h.x,
     h.y,
-
     h.w,
     h.h
   );
 
-
   /* roof */
 
   ctx.fillStyle =
-    "#624238";
-
+    "#65443a";
 
   ctx.beginPath();
 
@@ -1338,18 +1144,12 @@ function drawHouse(h) {
   );
 
   ctx.lineTo(
-
-    h.x +
-    h.w / 2,
-
+    h.x + h.w / 2,
     h.y - 55
   );
 
   ctx.lineTo(
-
-    h.x +
-    h.w + 12,
-
+    h.x + h.w + 12,
     h.y
   );
 
@@ -1357,90 +1157,63 @@ function drawHouse(h) {
 
   ctx.fill();
 
-
   /* windows */
 
   ctx.fillStyle =
-    "#9bdcff";
-
+    "#a5ddff";
 
   ctx.fillRect(
-
     h.x + 22,
-
     h.y + 35,
-
     42,
-
     38
   );
-
 
   ctx.fillRect(
-
-    h.x +
-    h.w - 64,
-
+    h.x + h.w - 64,
     h.y + 35,
-
     42,
-
     38
   );
-
 
   /* door */
 
   ctx.fillStyle =
-    "#5b3b2d";
-
+    "#5c3c2d";
 
   ctx.fillRect(
-
-    h.x +
-    h.w / 2 - 20,
-
-    h.y +
-    h.h - 60,
-
+    h.x + h.w / 2 - 20,
+    h.y + h.h - 60,
     40,
-
     60
   );
 }
 
-
-/* =================================
-   DRAW SHOP
-================================= */
+/* =========================
+   SHOP DRAW
+========================= */
 
 function drawShop(s) {
 
   ctx.fillStyle =
-    "rgba(0,0,0,.3)";
+    "rgba(0,0,0,.25)";
 
   ctx.fillRect(
-
-    s.x + 8,
-    s.y + 10,
-
+    s.x + 7,
+    s.y + 8,
     s.w,
     s.h
   );
-
 
   ctx.fillStyle =
     s.color;
 
   ctx.fillRect(
-
     s.x,
     s.y,
-
     s.w,
     s.h
   );
-
 
   ctx.fillStyle =
     "#fff";
@@ -1451,122 +1224,378 @@ function drawShop(s) {
   ctx.textAlign =
     "center";
 
-
   ctx.fillText(
-
     s.name,
-
-    s.x +
-    s.w / 2,
-
+    s.x + s.w / 2,
     s.y + 30
   );
 
-
   ctx.fillStyle =
-    "#a5dcff";
-
+    "#9bdcff";
 
   ctx.fillRect(
-
     s.x + 20,
-
     s.y + 50,
-
     s.w - 40,
-
     35
   );
 }
 
-
-/* =================================
-   DRAW TREE
-================================= */
+/* =========================
+   TREE DRAW
+========================= */
 
 function drawTree(t) {
 
   ctx.fillStyle =
-    "#67452e";
+    "#65452e";
 
   ctx.fillRect(
-
     t.x - 5,
-
     t.y,
-
     10,
-
     t.size
   );
 
-
   ctx.fillStyle =
-    "#287936";
-
+    "#287b37";
 
   ctx.beginPath();
 
   ctx.arc(
-
     t.x,
-
-    t.y - 8,
-
+    t.y - 10,
     t.size,
-
     0,
-
     Math.PI * 2
   );
 
   ctx.fill();
-
 
   ctx.fillStyle =
-    "#3d9846";
-
+    "#3e9948";
 
   ctx.beginPath();
 
   ctx.arc(
-
-    t.x - 12,
-
+    t.x - 13,
     t.y,
-
     t.size * .65,
-
     0,
-
     Math.PI * 2
   );
 
   ctx.fill();
 
-
   ctx.beginPath();
 
   ctx.arc(
-
-    t.x + 12,
-
+    t.x + 13,
     t.y,
-
     t.size * .65,
-
     0,
-
     Math.PI * 2
   );
 
   ctx.fill();
 }
 
+/* =========================
+   SHOWROOM DRAW
+========================= */
 
-/* =================================
-   DRAW BIG BUILDING
-================================= */
+function drawShowroom() {
+
+  /* shadow */
+
+  ctx.fillStyle =
+    "rgba(0,0,0,.3)";
+
+  ctx.fillRect(
+    showroom.x + 12,
+    showroom.y + 12,
+    showroom.w,
+    showroom.h
+  );
+
+  /* building */
+
+  ctx.fillStyle =
+    "#1976d2";
+
+  ctx.fillRect(
+    showroom.x,
+    showroom.y,
+    showroom.w,
+    showroom.h
+  );
+
+  /* roof */
+
+  ctx.fillStyle =
+    "#303030";
+
+  ctx.fillRect(
+    showroom.x - 8,
+    showroom.y - 22,
+    showroom.w + 16,
+    22
+  );
+
+  /* title */
+
+  ctx.fillStyle =
+    "#fff";
+
+  ctx.font =
+    "bold 32px Arial";
+
+  ctx.textAlign =
+    "center";
+
+  ctx.fillText(
+    "🏪 SHOWROOM",
+    showroom.x + showroom.w / 2,
+    showroom.y + 60
+  );
+
+  /* windows */
+
+  ctx.fillStyle =
+    "#9bdcff";
+
+  ctx.fillRect(
+    showroom.x + 45,
+    showroom.y + 110,
+    110,
+    70
+  );
+
+  ctx.fillRect(
+    showroom.x + showroom.w - 155,
+    showroom.y + 110,
+    110,
+    70
+  );
+
+  /*
+     SHOWROOM GATE
+
+     বড় গাড়ির গেট
+  */
+
+  ctx.fillStyle =
+    "#303030";
+
+  ctx.fillRect(
+    showroom.x + 230,
+    showroom.y + showroom.h - 25,
+    160,
+    25
+  );
+
+  /* gate sign */
+
+  ctx.fillStyle =
+    "#ffcc00";
+
+  ctx.fillRect(
+    showroom.x + 245,
+    showroom.y + showroom.h - 75,
+    130,
+    42
+  );
+
+  ctx.fillStyle =
+    "#111";
+
+  ctx.font =
+    "bold 16px Arial";
+
+  ctx.fillText(
+    "🚪 EXIT",
+    showroom.x + 310,
+    showroom.y + showroom.h - 48
+  );
+
+  /* door sides */
+
+  ctx.fillStyle =
+    "#333";
+
+  ctx.fillRect(
+    showroom.x + 60,
+    showroom.y + showroom.h - 100,
+    90,
+    100
+  );
+
+  ctx.fillRect(
+    showroom.x + showroom.w - 150,
+    showroom.y + showroom.h - 100,
+    90,
+    100
+  );
+}
+
+/* =========================
+   MARKET DRAW
+========================= */
+
+function drawMarket() {
+
+  drawBuilding(
+    market,
+    "#8e24aa",
+    "🚛 TRUCK MARKET"
+  );
+}
+
+/* =========================
+   GARAGE DRAW
+========================= */
+
+function drawGarage() {
+
+  /* shadow */
+
+  ctx.fillStyle =
+    "rgba(0,0,0,.3)";
+
+  ctx.fillRect(
+    garage.x + 12,
+    garage.y + 12,
+    garage.w,
+    garage.h
+  );
+
+  /* building */
+
+  ctx.fillStyle =
+    "#ef6c00";
+
+  ctx.fillRect(
+    garage.x,
+    garage.y,
+    garage.w,
+    garage.h
+  );
+
+  /* roof */
+
+  ctx.fillStyle =
+    "#333";
+
+  ctx.fillRect(
+    garage.x - 8,
+    garage.y - 22,
+    garage.w + 16,
+    22
+  );
+
+  /* title */
+
+  ctx.fillStyle =
+    "#fff";
+
+  ctx.font =
+    "bold 31px Arial";
+
+  ctx.textAlign =
+    "center";
+
+  ctx.fillText(
+    "🔧 GARAGE",
+    garage.x + garage.w / 2,
+    garage.y + 58
+  );
+
+  /*
+     Garage entrance
+  */
+
+  ctx.fillStyle =
+    "#252525";
+
+  ctx.fillRect(
+    garage.x + 230,
+    garage.y,
+    190,
+    170
+  );
+
+  /* inside */
+
+  ctx.fillStyle =
+    "#555";
+
+  ctx.fillRect(
+    garage.x + 250,
+    garage.y + 20,
+    150,
+    130
+  );
+
+  /* sign */
+
+  ctx.fillStyle =
+    "#ffd54f";
+
+  ctx.fillRect(
+    garage.x + 245,
+    garage.y + 195,
+    160,
+    45
+  );
+
+  ctx.fillStyle =
+    "#111";
+
+  ctx.font =
+    "bold 17px Arial";
+
+  ctx.fillText(
+    "🚚 SERVICE",
+    garage.x + 325,
+    garage.y + 224
+  );
+
+  /* windows */
+
+  ctx.fillStyle =
+    "#9bdcff";
+
+  ctx.fillRect(
+    garage.x + 45,
+    garage.y + 75,
+    100,
+    65
+  );
+
+  ctx.fillRect(
+    garage.x + garage.w - 145,
+    garage.y + 75,
+    100,
+    65
+  );
+}
+
+/* =========================
+   OFFICE DRAW
+========================= */
+
+function drawOffice() {
+
+  drawBuilding(
+    office,
+    "#00897b",
+    "👷 WORKER OFFICE"
+  );
+}
+
+/* =========================
+   NORMAL BUILDING
+========================= */
 
 function drawBuilding(
   b,
@@ -1577,338 +1606,242 @@ function drawBuilding(
   ctx.fillStyle =
     "rgba(0,0,0,.3)";
 
-
   ctx.fillRect(
-
-    b.x + 12,
-    b.y + 12,
-
+    b.x + 10,
+    b.y + 10,
     b.w,
     b.h
   );
-
 
   ctx.fillStyle =
     color;
 
-
   ctx.fillRect(
-
     b.x,
     b.y,
-
     b.w,
     b.h
   );
 
-
-  /* roof */
-
   ctx.fillStyle =
     "#303030";
 
-
   ctx.fillRect(
-
     b.x - 8,
     b.y - 20,
-
     b.w + 16,
     20
   );
-
-
-  /* title */
 
   ctx.fillStyle =
     "#fff";
 
   ctx.font =
-    "bold 27px Arial";
+    "bold 28px Arial";
 
   ctx.textAlign =
     "center";
 
-
   ctx.fillText(
-
     title,
-
-    b.x +
-    b.w / 2,
-
+    b.x + b.w / 2,
     b.y + 55
   );
-
-
-  /* windows */
 
   ctx.fillStyle =
     "#9bdcff";
 
-
   ctx.fillRect(
-
-    b.x + 40,
-
-    b.y + 95,
-
-    90,
-
-    60
+    b.x + 45,
+    b.y + 100,
+    100,
+    65
   );
 
-
   ctx.fillRect(
-
-    b.x +
-    b.w - 130,
-
-    b.y + 95,
-
-    90,
-
-    60
-  );
-
-
-  /* door */
-
-  ctx.fillStyle =
-    "#303030";
-
-
-  ctx.fillRect(
-
-    b.x +
-    b.w / 2 - 45,
-
-    b.y +
-    b.h - 100,
-
-    90,
-
-    100
+    b.x + b.w - 145,
+    b.y + 100,
+    100,
+    65
   );
 }
 
-
-/* =================================
-   DRAW PLAYER
-================================= */
+/* =========================
+   PLAYER DRAW
+========================= */
 
 function drawPlayer() {
 
   ctx.save();
 
-
   ctx.translate(
-
     player.x,
     player.y
   );
-
 
   /* shadow */
 
   ctx.fillStyle =
     "rgba(0,0,0,.3)";
 
-
   ctx.beginPath();
 
   ctx.ellipse(
-
     0,
-    13,
-
-    17,
+    14,
+    18,
     8,
-
     0,
     0,
     Math.PI * 2
   );
 
   ctx.fill();
-
 
   /* body */
 
   ctx.fillStyle =
     "#1976d2";
 
-
   ctx.fillRect(
-
-    -11,
-    -8,
-
-    22,
-    25
+    -12,
+    -7,
+    24,
+    27
   );
-
 
   /* head */
 
   ctx.fillStyle =
     "#ffd1a3";
 
-
   ctx.beginPath();
 
   ctx.arc(
-
     0,
     -18,
-
     10,
-
     0,
     Math.PI * 2
   );
 
   ctx.fill();
 
-
   ctx.restore();
 }
 
-
-/* =================================
-   DRAW TRUCK
-================================= */
+/* =========================
+   TRUCK DRAW
+========================= */
 
 function drawTruck() {
 
   ctx.save();
 
-
   ctx.translate(
-
     truck.x,
     truck.y
   );
 
-
   ctx.rotate(
     truck.angle
   );
-
 
   /* shadow */
 
   ctx.fillStyle =
     "rgba(0,0,0,.35)";
 
-
   ctx.fillRect(
-
-    -28,
-    -48,
-
-    56,
-    100
+    -29,
+    -52,
+    58,
+    108
   );
-
 
   /* cargo */
 
   ctx.fillStyle =
     "#f5b82e";
 
-
   ctx.fillRect(
-
     -23,
-    -2,
-
+    -3,
     46,
-    48
+    51
   );
-
 
   /* cabin */
 
   ctx.fillStyle =
     "#e53935";
 
-
   ctx.fillRect(
-
     -24,
-    -48,
-
+    -52,
     48,
-    47
+    50
   );
-
 
   /* windshield */
 
   ctx.fillStyle =
     "#8fd5ff";
 
-
   ctx.fillRect(
-
     -17,
-    -40,
-
+    -44,
     34,
-    20
+    21
   );
-
 
   /* wheels */
 
   ctx.fillStyle =
     "#111";
 
-
   ctx.fillRect(
-    -31,
     -32,
+    -35,
     9,
-    22
+    23
   );
 
   ctx.fillRect(
-    22,
+    23,
+    -35,
+    9,
+    23
+  );
+
+  ctx.fillRect(
     -32,
-    9,
-    22
-  );
-
-  ctx.fillRect(
-    -31,
-    20,
-    9,
-    22
-  );
-
-  ctx.fillRect(
     22,
-    20,
     9,
-    22
+    23
   );
 
+  ctx.fillRect(
+    23,
+    22,
+    9,
+    23
+  );
 
   ctx.restore();
 }
 
-
-/* =================================
-   DRAW WORLD
-================================= */
+/* =========================
+   WORLD DRAW
+========================= */
 
 function drawWorld() {
 
   drawRoads();
 
-
-  /* houses */
+  /*
+     Houses
+  */
 
   for (
     const house
@@ -1918,8 +1851,9 @@ function drawWorld() {
     drawHouse(house);
   }
 
-
-  /* shops */
+  /*
+     Shops
+  */
 
   for (
     const shop
@@ -1929,8 +1863,9 @@ function drawWorld() {
     drawShop(shop);
   }
 
-
-  /* trees */
+  /*
+     Trees
+  */
 
   for (
     const tree
@@ -1940,55 +1875,27 @@ function drawWorld() {
     drawTree(tree);
   }
 
+  /*
+     Locations
+  */
 
-  /* main locations */
+  drawShowroom();
 
-  drawBuilding(
+  drawMarket();
 
-    showroom,
+  drawGarage();
 
-    "#1976d2",
+  drawOffice();
 
-    "🏪 SHOWROOM"
-  );
-
-
-  drawBuilding(
-
-    market,
-
-    "#8e24aa",
-
-    "🚛 TRUCK MARKET"
-  );
-
-
-  drawBuilding(
-
-    garage,
-
-    "#ef6c00",
-
-    "🔧 GARAGE"
-  );
-
-
-  drawBuilding(
-
-    office,
-
-    "#00897b",
-
-    "👷 WORKER OFFICE"
-  );
-
-
-  /* truck */
+  /*
+     Truck
+  */
 
   drawTruck();
 
-
-  /* player */
+  /*
+     Player
+  */
 
   if (!driving) {
 
@@ -1996,10 +1903,9 @@ function drawWorld() {
   }
 }
 
-
-/* =================================
+/* =========================
    CAMERA
-================================= */
+========================= */
 
 function updateCamera() {
 
@@ -2008,84 +1914,77 @@ function updateCamera() {
       ? truck
       : player;
 
-
   camera.x =
-    target.x -
-    W / 2;
-
+    target.x - W / 2;
 
   camera.y =
-    target.y -
-    H / 2;
-
+    target.y - H / 2;
 
   camera.x =
     Math.max(
-
       0,
-
       Math.min(
-
         WORLD_WIDTH - W,
-
         camera.x
       )
     );
 
-
   camera.y =
     Math.max(
-
       0,
-
       Math.min(
-
         WORLD_HEIGHT - H,
-
         camera.y
       )
     );
 }
 
-
-/* =================================
+/* =========================
    RENDER
-================================= */
+========================= */
 
 function render() {
 
   ctx.clearRect(
-
     0,
     0,
     W,
     H
   );
 
-
   updateCamera();
-
 
   ctx.save();
 
-
   ctx.translate(
-
     -camera.x,
     -camera.y
   );
 
-
   drawWorld();
-
 
   ctx.restore();
 }
 
+/* =========================
+   HUD
+========================= */
 
-/* =================================
+function updateHUD() {
+
+  moneyEl.textContent =
+    Math.floor(save.money);
+
+  fuelEl.textContent =
+    Math.floor(save.fuel);
+
+  placeEl.textContent =
+    getLocationName();
+}
+
+/* =========================
    GAME LOOP
-================================= */
+========================= */
 
 function gameLoop() {
 
@@ -2093,27 +1992,27 @@ function gameLoop() {
 
   moveTruck();
 
-  checkTruckButton();
+  updateActionButton();
 
   updateHUD();
 
   render();
-
 
   requestAnimationFrame(
     gameLoop
   );
 }
 
-
-/* =================================
+/* =========================
    START
-================================= */
+========================= */
 
-updateHUD();
+modeEl.textContent =
+  "🚶 WALK";
 
 messageEl.textContent =
-  "🏪 Showroom-এ আছেন — 🚚 ট্রাকের কাছে যান।";
+  "🏪 Showroom-এর ভিতরে আছেন — 🚚 ট্রাকের কাছে যান।";
 
+updateHUD();
 
 gameLoop();
