@@ -1,305 +1,233 @@
-*{
-  box-sizing:border-box;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
-body{
-  margin:0;
-  background:#0c1320;
-  color:#fff;
-  font-family:Arial,"Noto Sans Bengali",sans-serif;
+html,
+body {
+  width: 100%;
+  height: 100%;
+
+  overflow: hidden;
+
+  background: #111;
+
+  font-family: Arial, sans-serif;
 }
 
-.app{
-  max-width:760px;
-  margin:auto;
-  min-height:100vh;
-  background:#151f30;
-  padding-bottom:65px;
+body {
+  touch-action: none;
 }
 
-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:16px;
-  background:#202d43;
-  position:sticky;
-  top:0;
-  z-index:5;
+#game {
+  position: fixed;
+
+  left: 0;
+  top: 0;
+
+  width: 100%;
+  height: 100%;
+
+  overflow: hidden;
 }
 
-header h1{
-  margin:0;
-  font-size:22px;
+#canvas {
+  position: absolute;
+
+  left: 0;
+  top: 0;
+
+  width: 100%;
+  height: 100%;
+
+  display: block;
 }
 
-small{
-  color:#aebbd0;
-  font-size:11px;
+#hud {
+  position: absolute;
+
+  left: 10px;
+  right: 10px;
+  top: 10px;
+
+  display: flex;
+  justify-content: space-between;
+
+  gap: 6px;
+
+  z-index: 20;
+
+  pointer-events: none;
 }
 
-.cash{
-  background:#0d1523;
-  color:#ffd34d;
-  padding:10px;
-  border-radius:12px;
-  font-weight:bold;
+#hud div {
+  background: rgba(0,0,0,.82);
+
+  color: white;
+
+  padding: 9px 11px;
+
+  border-radius: 11px;
+
+  font-size: 13px;
+
+  font-weight: bold;
+
+  white-space: nowrap;
 }
 
-nav{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:7px;
-  padding:10px;
-  background:#182438;
-  position:sticky;
-  top:76px;
-  z-index:4;
+#message {
+  position: absolute;
+
+  left: 50%;
+  top: 65px;
+
+  transform: translateX(-50%);
+
+  width: 92%;
+
+  text-align: center;
+
+  color: white;
+
+  font-size: 15px;
+
+  font-weight: bold;
+
+  text-shadow:
+    0 2px 4px #000;
+
+  z-index: 20;
+
+  pointer-events: none;
 }
 
-nav button{
-  border:0;
-  border-radius:10px;
-  padding:11px 4px;
-  background:#273650;
-  color:#d7deea;
-  font-weight:bold;
+#actionBtn {
+  display: none;
+
+  position: absolute;
+
+  left: 50%;
+  bottom: 180px;
+
+  transform: translateX(-50%);
+
+  border: none;
+
+  background: #ffb300;
+
+  color: #111;
+
+  padding: 14px 22px;
+
+  border-radius: 15px;
+
+  font-size: 16px;
+
+  font-weight: bold;
+
+  box-shadow:
+    0 5px 12px rgba(0,0,0,.45);
+
+  z-index: 30;
+
+  touch-action: manipulation;
 }
 
-nav .active{
-  background:#3f8cff;
-  color:#fff;
+#controls {
+  position: absolute;
+
+  left: 18px;
+  bottom: 25px;
+
+  width: 170px;
+  height: 150px;
+
+  z-index: 30;
 }
 
-.page{
-  display:none;
-  padding:12px;
+.control {
+  position: absolute;
+
+  width: 55px;
+  height: 55px;
+
+  border-radius: 15px;
+
+  border: 2px solid white;
+
+  background: rgba(0,0,0,.78);
+
+  color: white;
+
+  font-size: 26px;
+
+  font-weight: bold;
+
+  touch-action: none;
 }
 
-.page.active{
-  display:block;
+.control:active {
+  background: #ff9800;
+
+  color: black;
+
+  transform: scale(.94);
 }
 
-.hero{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:8px;
-  background:#202d43;
-  border-radius:15px;
-  padding:14px;
-  margin-bottom:12px;
+.up {
+  left: 57px;
+  top: 0;
 }
 
-.hero h2{
-  margin:0 0 4px;
-  font-size:19px;
+.left {
+  left: 0;
+  top: 62px;
 }
 
-.hero p{
-  margin:0;
-  font-size:12px;
-  color:#aebbd0;
+.down {
+  left: 57px;
+  top: 62px;
 }
 
-.badge{
-  background:#111a29;
-  color:#ffd34d;
-  padding:8px 10px;
-  border-radius:10px;
-  white-space:nowrap;
+.right {
+  left: 114px;
+  top: 62px;
 }
 
-.grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:10px;
+#mode {
+  position: absolute;
+
+  right: 12px;
+  bottom: 30px;
+
+  padding: 10px 13px;
+
+  border-radius: 11px;
+
+  background: rgba(0,0,0,.8);
+
+  color: white;
+
+  font-size: 13px;
+
+  font-weight: bold;
+
+  z-index: 30;
 }
 
-.card{
-  background:#202d43;
-  border-radius:15px;
-  padding:12px;
-  border:1px solid #33445f;
-}
+@media (min-width: 700px) {
 
-.truck-art{
-  text-align:center;
-  font-size:50px;
-  padding:5px;
-}
-
-.card h3,
-.owned h3,
-.mission h3{
-  margin:4px 0;
-  font-size:16px;
-}
-
-.price,
-.reward{
-  color:#ffd34d;
-  font-weight:bold;
-  margin:6px 0;
-}
-
-.spec{
-  font-size:12px;
-  color:#b8c3d6;
-  line-height:1.6;
-}
-
-.btn{
-  width:100%;
-  border:0;
-  border-radius:10px;
-  padding:10px;
-  margin-top:8px;
-  font-weight:bold;
-}
-
-.buy{
-  background:#2ecc71;
-  color:#07140d;
-}
-
-.upgrade{
-  background:#ff9f1c;
-  color:#201304;
-}
-
-.sell{
-  background:#e85d75;
-  color:#fff;
-}
-
-.btn:disabled{
-  background:#566273;
-  color:#ccd2db;
-}
-
-.locked{
-  opacity:.55;
-}
-
-.tag{
-  font-size:10px;
-  background:#43536d;
-  padding:3px 5px;
-  border-radius:5px;
-}
-
-.owned{
-  display:flex;
-  gap:10px;
-  margin-bottom:10px;
-  background:#202d43;
-  border-radius:15px;
-  padding:12px;
-  border:1px solid #33445f;
-}
-
-.owned-info{
-  flex:1;
-}
-
-.owned .truck-art{
-  font-size:42px;
-}
-
-.bar{
-  height:7px;
-  background:#0e1624;
-  border-radius:10px;
-  overflow:hidden;
-  margin-top:7px;
-}
-
-.bar span{
-  display:block;
-  height:100%;
-  background:#42d392;
-}
-
-.mission{
-  background:#202d43;
-  border-radius:15px;
-  padding:14px;
-  margin-bottom:10px;
-  border:1px solid #33445f;
-}
-
-.mission-top{
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-}
-
-.mission p{
-  font-size:12px;
-  color:#aebbd0;
-}
-
-.empty{
-  text-align:center;
-  color:#aebbd0;
-  padding:30px;
-  background:#202d43;
-  border-radius:15px;
-}
-
-footer{
-  position:fixed;
-  bottom:0;
-  left:50%;
-  transform:translateX(-50%);
-  width:min(760px,100%);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:8px;
-  background:#0e1726;
-  border-top:1px solid #33445f;
-  padding:10px;
-  font-size:12px;
-}
-
-footer b{
-  color:#ffd34d;
-}
-
-#reset{
-  margin-left:12px;
-  border:0;
-  background:#334158;
-  color:#fff;
-  border-radius:8px;
-  padding:7px;
-}
-
-@media(max-width:430px){
-
-  header h1{
-    font-size:18px;
+  #controls {
+    left: 30px;
+    bottom: 30px;
   }
 
-  nav{
-    top:68px;
-  }
-
-  .grid{
-    gap:8px;
-  }
-
-  .card{
-    padding:9px;
-  }
-
-  .truck-art{
-    font-size:42px;
-  }
-
-  .hero{
-    padding:11px;
+  #actionBtn {
+    bottom: 150px;
   }
 }
