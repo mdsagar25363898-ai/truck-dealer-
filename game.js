@@ -1,21 +1,27 @@
-// ======================================================
-// TRUCK DEALER 3D - PLAYER + FOLLOW CAMERA
-// ======================================================
+// =====================================================
+// TRUCK DEALER GAME
+// STEP 1 — PLAYER + FOLLOW CAMERA
+// =====================================================
 
 const canvas = document.getElementById("gameCanvas");
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);
 
-// Camera
+// ---------------- CAMERA ----------------
+
 const camera = new THREE.PerspectiveCamera(
-  60,
+  65,
   window.innerWidth / window.innerHeight,
   0.1,
   5000
 );
 
-// Renderer
+// Camera will stay behind the player
+camera.position.set(0, 85, 120);
+
+// ---------------- RENDERER ----------------
+
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
   antialias: true
@@ -24,98 +30,89 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 
-// Lighting
-const ambient = new THREE.AmbientLight(0xffffff, 1.5);
+// ---------------- LIGHT ----------------
+
+const ambient = new THREE.AmbientLight(0xffffff, 1.8);
 scene.add(ambient);
 
 const sun = new THREE.DirectionalLight(0xffffff, 2);
-sun.position.set(100, 300, 100);
+sun.position.set(200, 500, 200);
 scene.add(sun);
 
-
-// ======================================================
+// =====================================================
 // MAP
-// ======================================================
+// =====================================================
 
-const mapTexture = new THREE.TextureLoader().load(
-  "map.png",
-  function () {
-    console.log("MAP LOADED");
-  }
-);
+const WORLD_W = 1536;
+const WORLD_H = 1024;
+
+const mapTexture = new THREE.TextureLoader().load("map.png");
 
 const mapMaterial = new THREE.MeshBasicMaterial({
   map: mapTexture
 });
 
-const mapGeometry = new THREE.PlaneGeometry(1536, 1024);
+const mapGeometry = new THREE.PlaneGeometry(
+  WORLD_W,
+  WORLD_H
+);
 
 const map = new THREE.Mesh(
   mapGeometry,
   mapMaterial
 );
 
+// Make map horizontal
 map.rotation.x = -Math.PI / 2;
-map.position.y = 0;
+map.position.set(0, 0, 0);
 
 scene.add(map);
 
-
-// ======================================================
+// =====================================================
 // PLAYER
-// ======================================================
+// =====================================================
 
-const playerGroup = new THREE.Group();
-scene.add(playerGroup);
+const player = {
+  x: 0,
+  z: 0,
+  speed: 1.8,
+  direction: 0
+};
 
-// Character image
+// Player image
 const playerTexture = new THREE.TextureLoader().load(
-  "player.png",
-  function () {
-    console.log("PLAYER LOADED");
-  }
+  "player.png"
 );
 
-// Character sprite
-const playerMaterial = new THREE.SpriteMaterial({
+// Use the character sheet as a billboard.
+// The sheet is cropped to the FRONT character area.
+const playerMaterial = new THREE.MeshBasicMaterial({
   map: playerTexture,
   transparent: true,
-  depthTest: true
+  side: THREE.DoubleSide
 });
 
-const player = new THREE.Sprite(playerMaterial);
-
-player.scale.set(55, 80, 1);
-
-player.position.y = 40;
-
-playerGroup.add(player);
-
-
-// Starting position
-playerGroup.position.set(
-  768,
-  0,
-  512
+const playerGeometry = new THREE.PlaneGeometry(
+  55,
+  85
 );
 
-
-// ======================================================
-// FOLLOW CAMERA
-// ======================================================
-
-const cameraOffset = new THREE.Vector3(
-  0,
-  85,
-  120
+const playerMesh = new THREE.Mesh(
+  playerGeometry,
+  playerMaterial
 );
 
-const cameraTarget = new THREE.Vector3();
+playerMesh.position.set(
+  player.x,
+  42,
+  player.z
+);
 
+scene.add(playerMesh);
 
-// ======================================================
-// MOVEMENT
-// ======================================================
+// =====================================================
+// CONTROLS
+// =====================================================
 
 const keys = {
   up: false,
@@ -124,325 +121,234 @@ const keys = {
   right: false
 };
 
-let playerSpeed = 3.5;
-let playerRotation = 0;
-
-
-// Keyboard
-window.addEventListener("keydown", function (e) {
+window.addEventListener("keydown", function(e) {
 
   if (
     e.key === "ArrowUp" ||
     e.key.toLowerCase() === "w"
-  ) keys.up = true;
+  ) {
+    keys.up = true;
+  }
 
   if (
     e.key === "ArrowDown" ||
     e.key.toLowerCase() === "s"
-  ) keys.down = true;
+  ) {
+    keys.down = true;
+  }
 
   if (
     e.key === "ArrowLeft" ||
     e.key.toLowerCase() === "a"
-  ) keys.left = true;
+  ) {
+    keys.left = true;
+  }
 
   if (
     e.key === "ArrowRight" ||
     e.key.toLowerCase() === "d"
-  ) keys.right = true;
+  ) {
+    keys.right = true;
+  }
 
 });
 
-
-window.addEventListener("keyup", function (e) {
+window.addEventListener("keyup", function(e) {
 
   if (
     e.key === "ArrowUp" ||
     e.key.toLowerCase() === "w"
-  ) keys.up = false;
+  ) {
+    keys.up = false;
+  }
 
   if (
     e.key === "ArrowDown" ||
     e.key.toLowerCase() === "s"
-  ) keys.down = false;
+  ) {
+    keys.down = false;
+  }
 
   if (
     e.key === "ArrowLeft" ||
     e.key.toLowerCase() === "a"
-  ) keys.left = false;
+  ) {
+    keys.left = false;
+  }
 
   if (
     e.key === "ArrowRight" ||
     e.key.toLowerCase() === "d"
-  ) keys.right = false;
+  ) {
+    keys.right = false;
+  }
 
 });
 
-
-// ======================================================
+// =====================================================
 // MOBILE BUTTONS
-// ======================================================
+// =====================================================
 
-function holdButton(id, key) {
+function holdButton(id, keyName) {
 
   const button = document.getElementById(id);
 
   if (!button) return;
 
-  button.addEventListener("touchstart", function(e) {
+  const start = function(e) {
     e.preventDefault();
-    keys[key] = true;
-  });
+    keys[keyName] = true;
+  };
 
-  button.addEventListener("touchend", function(e) {
+  const stop = function(e) {
     e.preventDefault();
-    keys[key] = false;
+    keys[keyName] = false;
+  };
+
+  button.addEventListener("touchstart", start, {
+    passive: false
   });
 
-  button.addEventListener("mousedown", function() {
-    keys[key] = true;
+  button.addEventListener("touchend", stop, {
+    passive: false
   });
 
-  button.addEventListener("mouseup", function() {
-    keys[key] = false;
+  button.addEventListener("touchcancel", stop, {
+    passive: false
   });
 
-  button.addEventListener("mouseleave", function() {
-    keys[key] = false;
-  });
+  button.addEventListener("mousedown", start);
+  button.addEventListener("mouseup", stop);
+  button.addEventListener("mouseleave", stop);
 }
 
-holdButton("up", "up");
-holdButton("down", "down");
-holdButton("left", "left");
-holdButton("right", "right");
+holdButton("upBtn", "up");
+holdButton("downBtn", "down");
+holdButton("leftBtn", "left");
+holdButton("rightBtn", "right");
 
-
-// ======================================================
+// =====================================================
 // PLAYER MOVEMENT
-// ======================================================
+// =====================================================
 
 function updatePlayer() {
 
-  let moving = false;
+  let dx = 0;
+  let dz = 0;
+
+  if (keys.up) {
+    dz -= player.speed;
+  }
+
+  if (keys.down) {
+    dz += player.speed;
+  }
 
   if (keys.left) {
-    playerRotation += 0.045;
+    dx -= player.speed;
   }
 
   if (keys.right) {
-    playerRotation -= 0.045;
+    dx += player.speed;
   }
 
-  playerGroup.rotation.y = playerRotation;
-
-
-  if (keys.up) {
-
-    playerGroup.position.x +=
-      Math.sin(playerRotation) * playerSpeed;
-
-    playerGroup.position.z +=
-      Math.cos(playerRotation) * playerSpeed;
-
-    moving = true;
+  // Normalize diagonal movement
+  if (dx !== 0 && dz !== 0) {
+    dx *= 0.707;
+    dz *= 0.707;
   }
 
+  player.x += dx;
+  player.z += dz;
 
-  if (keys.down) {
+  // Keep player inside map
+  const limitX = WORLD_W / 2 - 30;
+  const limitZ = WORLD_H / 2 - 30;
 
-    playerGroup.position.x -=
-      Math.sin(playerRotation) * playerSpeed;
+  player.x = Math.max(
+    -limitX,
+    Math.min(limitX, player.x)
+  );
 
-    playerGroup.position.z -=
-      Math.cos(playerRotation) * playerSpeed;
+  player.z = Math.max(
+    -limitZ,
+    Math.min(limitZ, player.z)
+  );
 
-    moving = true;
-  }
+  playerMesh.position.x = player.x;
+  playerMesh.position.z = player.z;
 
-
-  // Map boundary
-  playerGroup.position.x =
-    Math.max(-700, Math.min(700, playerGroup.position.x));
-
-  playerGroup.position.z =
-    Math.max(-470, Math.min(470, playerGroup.position.z));
-
-
-  if (moving) {
-
-    const fuelElement =
-      document.getElementById("fuel");
-
-    if (fuelElement) {
-
-      let fuel =
-        Number(fuelElement.textContent);
-
-      fuel -= 0.003;
-
-      if (fuel < 0) fuel = 0;
-
-      fuelElement.textContent =
-        Math.floor(fuel);
-    }
-  }
+  // Character stays upright
+  playerMesh.rotation.x = 0;
+  playerMesh.rotation.y = 0;
 }
 
-
-// ======================================================
-// CAMERA FOLLOW PLAYER
-// ======================================================
+// =====================================================
+// FOLLOW CAMERA
+// =====================================================
 
 function updateCamera() {
 
-  const offset =
-    cameraOffset.clone();
+  // Camera follows behind player
+  const distance = 115;
+  const height = 75;
 
-  offset.applyAxisAngle(
-    new THREE.Vector3(0, 1, 0),
-    playerRotation
+  const targetX = player.x;
+  const targetY = 35;
+  const targetZ = player.z + distance;
+
+  // Smooth camera movement
+  camera.position.x +=
+    (targetX - camera.position.x) * 0.08;
+
+  camera.position.y +=
+    (height - camera.position.y) * 0.08;
+
+  camera.position.z +=
+    (targetZ - camera.position.z) * 0.08;
+
+  // Look slightly ahead of player
+  camera.lookAt(
+    player.x,
+    targetY,
+    player.z - 30
   );
-
-  const desiredPosition =
-    playerGroup.position.clone().add(offset);
-
-  // Camera stays behind player
-  camera.position.lerp(
-    desiredPosition,
-    0.12
-  );
-
-
-  cameraTarget.copy(
-    playerGroup.position
-  );
-
-  cameraTarget.y += 25;
-
-
-  camera.lookAt(cameraTarget);
 }
 
-
-// ======================================================
-// LOCATION
-// ======================================================
-
-function updateLocation() {
-
-  const x = playerGroup.position.x;
-  const z = playerGroup.position.z;
-
-  const location =
-    document.getElementById("location");
-
-  if (!location) return;
-
-
-  // Showroom area
-  if (
-    x > 500 &&
-    x < 900 &&
-    z > 250 &&
-    z < 500
-  ) {
-
-    location.textContent =
-      "🏪 Showroom";
-
-  }
-
-  // Used Truck Market
-  else if (
-    x > 150 &&
-    x < 550 &&
-    z > -100 &&
-    z < 180
-  ) {
-
-    location.textContent =
-      "🚛 Used Truck Market";
-
-  }
-
-  // Garage
-  else if (
-    x > -650 &&
-    x < -300 &&
-    z > -50 &&
-    z < 250
-  ) {
-
-    location.textContent =
-      "🔧 Truck Garage";
-
-  }
-
-  else {
-
-    location.textContent =
-      "🛣️ Road";
-
-  }
-}
-
-
-// ======================================================
+// =====================================================
 // RESIZE
-// ======================================================
+// =====================================================
 
-window.addEventListener(
-  "resize",
-  function() {
+window.addEventListener("resize", function() {
 
-    camera.aspect =
-      window.innerWidth /
-      window.innerHeight;
+  camera.aspect =
+    window.innerWidth /
+    window.innerHeight;
 
-    camera.updateProjectionMatrix();
+  camera.updateProjectionMatrix();
 
-    renderer.setSize(
-      window.innerWidth,
-      window.innerHeight
-    );
+  renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+  );
 
-  }
-);
+});
 
-
-// ======================================================
+// =====================================================
 // GAME LOOP
-// ======================================================
+// =====================================================
 
 function gameLoop() {
 
   requestAnimationFrame(gameLoop);
 
   updatePlayer();
-
   updateCamera();
-
-  updateLocation();
 
   renderer.render(
     scene,
     camera
   );
 }
-
-
-// Start camera behind player
-camera.position.set(
-  768,
-  85,
-  632
-);
-
-camera.lookAt(
-  768,
-  30,
-  512
-);
 
 gameLoop();
