@@ -1,59 +1,85 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
-  <title>Truck Dealer 3D</title>
+<title>Truck Dealer 3D</title>
 
-  <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 </head>
 
 <body>
 
-  <div id="game">
+<div id="game">
 
-    <!-- 3D GAME -->
     <canvas id="gameCanvas"></canvas>
 
     <!-- HUD -->
     <div id="hud">
-      <div class="hudBox">💰 ৳<span id="money">380000</span></div>
-      <div class="hudBox">⛽ <span id="fuel">98</span>%</div>
-      <div class="hudBox">🚛 <span id="truckName">Mini Truck</span></div>
+
+        <div class="hudBox">
+            💰 <span id="money">380000</span> ৳
+        </div>
+
+        <div class="hudBox">
+            ⛽ <span id="fuel">98</span>%
+        </div>
+
+        <div class="hudBox truckHud">
+            🚛 <span id="truckName">Mini Truck</span>
+        </div>
+
     </div>
 
     <!-- Location -->
-    <div id="location">🏪 Showroom</div>
+    <div id="locationBox">
+        🏪 Showroom
+    </div>
 
-    <!-- Mobile Controls -->
+    <!-- Message -->
+    <div id="message">
+        🏪 Showroom থেকে শুরু করুন
+    </div>
+
+    <!-- Interaction -->
+    <button id="actionButton" class="actionButton">
+        🚶 হাঁটুন
+    </button>
+
+    <!-- Controls -->
     <div id="controls">
 
-      <div class="movePad">
-        <button id="up">▲</button>
+        <div class="dpad">
 
-        <div class="middle">
-          <button id="left">◀</button>
-          <button id="down">▼</button>
-          <button id="right">▶</button>
+            <button id="up">▲</button>
+
+            <div>
+                <button id="left">◀</button>
+                <button id="down">▼</button>
+                <button id="right">▶</button>
+            </div>
+
         </div>
-      </div>
 
-      <div class="actions">
-        <button id="run">🏃</button>
-        <button id="action">✋</button>
-        <button id="truckButton">🚛</button>
-      </div>
+        <div class="gameButtons">
+
+            <button id="runButton">🏃</button>
+
+            <button id="handButton">✋</button>
+
+            <button id="truckButton">🚛</button>
+
+        </div>
 
     </div>
 
-  </div>
+</div>
 
-  <!-- Three.js -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-
-  <script src="game.js"></script>
+<script src="game.js"></script>
 
 </body>
 </html>
