@@ -1,1174 +1,819 @@
-/* =========================================================
-   TRUCK DEALER GAME
-   SHOWROOM START + PLAYER + FOLLOW CAMERA + TRUCK DRIVING
-   ========================================================= */
+// ======================================================
+// TRUCK DEALER - NORMAL 3D PLAYER
+// Showroom start + third person follow camera
+// ======================================================
 
 const canvas = document.getElementById("gameCanvas");
 
-/* =========================
-   THREE.JS
-========================= */
+if (!canvas) {
+  console.error("gameCanvas পাওয়া যায়নি");
+}
+
+// -------------------- THREE.JS --------------------
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x78c9e5);
+scene.background = new THREE.Color(0x87ceeb);
 
 const camera = new THREE.PerspectiveCamera(
-    65,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    5000
+  60,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  3000
 );
 
 const renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
-    antialias: true
+  canvas: canvas,
+  antialias: true
 });
 
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-/* =========================
-   LIGHT
-========================= */
+// -------------------- LIGHT --------------------
 
-const ambient = new THREE.AmbientLight(0xffffff, 2);
-scene.add(ambient);
+const hemiLight = new THREE.HemisphereLight(
+  0xffffff,
+  0x667788,
+  2.2
+);
 
-const sun = new THREE.DirectionalLight(0xffffff, 2);
-sun.position.set(300, 500, 200);
+scene.add(hemiLight);
+
+const sun = new THREE.DirectionalLight(
+  0xffffff,
+  3
+);
+
+sun.position.set(200, 400, 200);
 sun.castShadow = true;
+
+sun.shadow.mapSize.width = 2048;
+sun.shadow.mapSize.height = 2048;
+
 scene.add(sun);
 
-/* =========================
-   GAME DATA
-========================= */
+// ======================================================
+// GAME STATE
+// ======================================================
 
 let money = Number(localStorage.getItem("td_money")) || 380000;
-let fuel = Number(localStorage.getItem("td_fuel")) || 98;
+let fuel = Number(localStorage.getItem("td_fuel")) || 83;
 
-let truckName =
-    localStorage.getItem("td_truck") || "Mini Truck";
+let gameMode = "walking";
 
-document.getElementById("money").textContent =
-    money.toLocaleString();
+const player = {
+  x: 0,
+  y: 0,
+  z: 0,
+  speed: 0.16,
+  runSpeed: 0.28,
+  rotation: 0
+};
 
-document.getElementById("fuel").textContent =
-    Math.round(fuel);
+const keys = {
+  up: false,
+  down: false,
+  left: false,
+  right: false,
+  run: false
+};
 
-document.getElementById("truckName").textContent =
-    truckName;
+// ======================================================
+// MAP
+// ======================================================
 
-/* =========================
-   MAP
-========================= */
+const mapTexture = new THREE.TextureLoader().load("map.png");
 
-const WORLD_W = 1536;
-const WORLD_H = 1024;
-
-const loader = new THREE.TextureLoader();
-
-const mapTexture = loader.load(
-    "map.png",
-    () => {
-        console.log("MAP LOADED");
-    }
-);
-
-mapTexture.colorSpace = THREE.SRGBColorSpace;
-
-const mapMaterial = new THREE.MeshBasicMaterial({
-    map: mapTexture
+const mapMaterial = new THREE.MeshStandardMaterial({
+  map: mapTexture
 });
 
-const mapGeometry = new THREE.PlaneGeometry(
-    WORLD_W,
-    WORLD_H
-);
+const mapGeometry = new THREE.PlaneGeometry(1536, 1024);
 
 const map = new THREE.Mesh(
-    mapGeometry,
-    mapMaterial
+  mapGeometry,
+  mapMaterial
 );
 
 map.rotation.x = -Math.PI / 2;
-map.position.y = 0;
+map.position.y = -0.05;
+
+map.receiveShadow = true;
 
 scene.add(map);
 
-/* =========================
-   PLAYER
-========================= */
+// ======================================================
+// PLAYER
+// ======================================================
 
 const playerGroup = new THREE.Group();
+
 scene.add(playerGroup);
 
-const playerTexture = loader.load(
-    "player.png",
-    () => {
-        console.log("PLAYER LOADED");
-    }
-);
+playerGroup.position.set(0, 0, 0);
 
-playerTexture.colorSpace = THREE.SRGBColorSpace;
+// ------------------------------------------------------
+// BODY
+// ------------------------------------------------------
 
-playerTexture.minFilter = THREE.LinearFilter;
-playerTexture.magFilter = THREE.LinearFilter;
-
-const playerMaterial = new THREE.MeshBasicMaterial({
-    map: playerTexture,
-    transparent: true,
-    side: THREE.DoubleSide,
-    depthWrite: false
+const blackMaterial = new THREE.MeshStandardMaterial({
+  color: 0x171717,
+  roughness: 0.8
 });
 
-const playerGeometry = new THREE.PlaneGeometry(
-    48,
-    90
+const whiteMaterial = new THREE.MeshStandardMaterial({
+  color: 0xf4f4f4,
+  roughness: 0.7
+});
+
+const blueMaterial = new THREE.MeshStandardMaterial({
+  color: 0x24528a,
+  roughness: 0.9
+});
+
+const skinMaterial = new THREE.MeshStandardMaterial({
+  color: 0xc98b62,
+  roughness: 0.9
+});
+
+const hairMaterial = new THREE.MeshStandardMaterial({
+  color: 0x241a16,
+  roughness: 0.9
+});
+
+const shoeMaterial = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  roughness: 0.7
+});
+
+// ======================================================
+// LEGS
+// ======================================================
+
+const legGeometry = new THREE.BoxGeometry(
+  0.34,
+  1.25,
+  0.36
 );
 
-const playerMesh = new THREE.Mesh(
-    playerGeometry,
-    playerMaterial
+const leftLeg = new THREE.Mesh(
+  legGeometry,
+  blueMaterial
 );
 
-playerMesh.position.y = 45;
+const rightLeg = new THREE.Mesh(
+  legGeometry,
+  blueMaterial
+);
 
-playerGroup.add(playerMesh);
+leftLeg.position.set(-0.22, 0.72, 0);
+rightLeg.position.set(0.22, 0.72, 0);
 
-/*
-   START POSITION
+leftLeg.castShadow = true;
+rightLeg.castShadow = true;
 
-   Game শুরু হবে Showroom এলাকায়।
-*/
+playerGroup.add(leftLeg);
+playerGroup.add(rightLeg);
+
+// ======================================================
+// SHOES
+// ======================================================
+
+const shoeGeometry = new THREE.BoxGeometry(
+  0.42,
+  0.20,
+  0.65
+);
+
+const leftShoe = new THREE.Mesh(
+  shoeGeometry,
+  shoeMaterial
+);
+
+const rightShoe = new THREE.Mesh(
+  shoeGeometry,
+  shoeMaterial
+);
+
+leftShoe.position.set(-0.22, 0.12, 0.10);
+rightShoe.position.set(0.22, 0.12, 0.10);
+
+leftShoe.castShadow = true;
+rightShoe.castShadow = true;
+
+playerGroup.add(leftShoe);
+playerGroup.add(rightShoe);
+
+// ======================================================
+// BODY / JACKET
+// ======================================================
+
+const bodyGeometry = new THREE.BoxGeometry(
+  0.95,
+  1.15,
+  0.52
+);
+
+const body = new THREE.Mesh(
+  bodyGeometry,
+  blackMaterial
+);
+
+body.position.y = 1.65;
+body.castShadow = true;
+
+playerGroup.add(body);
+
+// ======================================================
+// WHITE T-SHIRT
+// ======================================================
+
+const shirtGeometry = new THREE.BoxGeometry(
+  0.43,
+  0.72,
+  0.56
+);
+
+const shirt = new THREE.Mesh(
+  shirtGeometry,
+  whiteMaterial
+);
+
+shirt.position.set(
+  0,
+  1.68,
+  -0.01
+);
+
+playerGroup.add(shirt);
+
+// ======================================================
+// HEAD
+// ======================================================
+
+const headGeometry = new THREE.SphereGeometry(
+  0.39,
+  24,
+  20
+);
+
+const head = new THREE.Mesh(
+  headGeometry,
+  skinMaterial
+);
+
+head.position.y = 2.55;
+head.castShadow = true;
+
+playerGroup.add(head);
+
+// ======================================================
+// HAIR
+// ======================================================
+
+const hairGeometry = new THREE.SphereGeometry(
+  0.41,
+  20,
+  14
+);
+
+const hair = new THREE.Mesh(
+  hairGeometry,
+  hairMaterial
+);
+
+hair.scale.set(
+  1,
+  0.65,
+  0.95
+);
+
+hair.position.set(
+  0,
+  2.82,
+  -0.02
+);
+
+playerGroup.add(hair);
+
+// ======================================================
+// SUNGLASSES
+// ======================================================
+
+const glassesMaterial = new THREE.MeshStandardMaterial({
+  color: 0x080808,
+  roughness: 0.2,
+  metalness: 0.2
+});
+
+const glassGeometry = new THREE.BoxGeometry(
+  0.30,
+  0.10,
+  0.035
+);
+
+const glassLeft = new THREE.Mesh(
+  glassGeometry,
+  glassesMaterial
+);
+
+const glassRight = new THREE.Mesh(
+  glassGeometry,
+  glassesMaterial
+);
+
+glassLeft.position.set(
+  -0.17,
+  2.59,
+  -0.37
+);
+
+glassRight.position.set(
+  0.17,
+  2.59,
+  -0.37
+);
+
+playerGroup.add(glassLeft);
+playerGroup.add(glassRight);
+
+// ======================================================
+// ARMS
+// ======================================================
+
+const armGeometry = new THREE.BoxGeometry(
+  0.28,
+  1.05,
+  0.30
+);
+
+const leftArm = new THREE.Mesh(
+  armGeometry,
+  blackMaterial
+);
+
+const rightArm = new THREE.Mesh(
+  armGeometry,
+  blackMaterial
+);
+
+leftArm.position.set(
+  -0.63,
+  1.63,
+  0
+);
+
+rightArm.position.set(
+  0.63,
+  1.63,
+  0
+);
+
+leftArm.castShadow = true;
+rightArm.castShadow = true;
+
+playerGroup.add(leftArm);
+playerGroup.add(rightArm);
+
+// ======================================================
+// HANDS
+// ======================================================
+
+const handGeometry = new THREE.SphereGeometry(
+  0.15,
+  12,
+  10
+);
+
+const leftHand = new THREE.Mesh(
+  handGeometry,
+  skinMaterial
+);
+
+const rightHand = new THREE.Mesh(
+  handGeometry,
+  skinMaterial
+);
+
+leftHand.position.set(
+  -0.63,
+  1.08,
+  0
+);
+
+rightHand.position.set(
+  0.63,
+  1.08,
+  0
+);
+
+playerGroup.add(leftHand);
+playerGroup.add(rightHand);
+
+// ======================================================
+// PLAYER SIZE
+// ======================================================
+
+// Realistic game-world scale
+playerGroup.scale.set(
+  1.0,
+  1.0,
+  1.0
+);
+
+// ======================================================
+// SHOWROOM START POSITION
+// ======================================================
 
 playerGroup.position.set(
-    -120,
-    0,
-    180
+  0,
+  0,
+  0
 );
 
-/* =========================
-   TRUCK
-========================= */
-
-const truckGroup = new THREE.Group();
-scene.add(truckGroup);
-
-truckGroup.position.set(
-    -120,
-    0,
-    115
-);
-
-/* Truck body */
-
-const truckBodyGeometry =
-    new THREE.BoxGeometry(52, 25, 85);
-
-const truckBodyMaterial =
-    new THREE.MeshStandardMaterial({
-        color: 0x1769aa,
-        roughness: 0.7
-    });
-
-const truckBody =
-    new THREE.Mesh(
-        truckBodyGeometry,
-        truckBodyMaterial
-    );
-
-truckBody.position.y = 17;
-
-truckGroup.add(truckBody);
-
-/* Truck cabin */
-
-const cabinGeometry =
-    new THREE.BoxGeometry(50, 38, 38);
-
-const cabinMaterial =
-    new THREE.MeshStandardMaterial({
-        color: 0x1976d2,
-        roughness: 0.6
-    });
-
-const cabin =
-    new THREE.Mesh(
-        cabinGeometry,
-        cabinMaterial
-    );
-
-cabin.position.set(
-    0,
-    40,
-    -18
-);
-
-truckGroup.add(cabin);
-
-/* Windows */
-
-const windowMaterial =
-    new THREE.MeshStandardMaterial({
-        color: 0x152535,
-        roughness: 0.2
-    });
-
-const frontWindow =
-    new THREE.Mesh(
-        new THREE.BoxGeometry(42, 18, 2),
-        windowMaterial
-    );
-
-frontWindow.position.set(
-    0,
-    43,
-    -38
-);
-
-truckGroup.add(frontWindow);
-
-/* Wheels */
-
-function createWheel(x, z) {
-
-    const wheel =
-        new THREE.Mesh(
-            new THREE.CylinderGeometry(
-                10,
-                10,
-                8,
-                24
-            ),
-            new THREE.MeshStandardMaterial({
-                color: 0x151515
-            })
-        );
-
-    wheel.rotation.z = Math.PI / 2;
-
-    wheel.position.set(
-        x,
-        10,
-        z
-    );
-
-    truckGroup.add(wheel);
-}
-
-createWheel(-29, -27);
-createWheel(29, -27);
-createWheel(-29, 27);
-createWheel(29, 27);
-
-/* =========================
-   PLAYER STATE
-========================= */
-
-let playerMode = "walking";
-
-let playerSpeed = 1.6;
-let truckSpeed = 2.8;
-
-let nearTruck = false;
-
-let keys = {
-    up: false,
-    down: false,
-    left: false,
-    right: false
-};
-
-/* =========================
-   CAMERA
-========================= */
+// ======================================================
+// CAMERA
+// ======================================================
 
 const cameraOffset = new THREE.Vector3(
-    0,
-    58,
-    95
+  0,
+  3.8,
+  6.8
 );
+
+const cameraLook = new THREE.Vector3();
 
 function updateCamera() {
 
-    let target;
+  const desiredCamera = new THREE.Vector3();
 
-    if (playerMode === "walking") {
-        target = playerGroup.position;
-    } else {
-        target = truckGroup.position;
-    }
+  desiredCamera.copy(cameraOffset);
 
-    /*
-       Camera follows player/truck.
-       Camera কখনো আকাশে স্থির থাকবে না।
-    */
+  desiredCamera.applyAxisAngle(
+    new THREE.Vector3(0, 1, 0),
+    playerGroup.rotation.y
+  );
 
-    const desired = new THREE.Vector3(
-        target.x + cameraOffset.x,
-        target.y + cameraOffset.y,
-        target.z + cameraOffset.z
-    );
+  desiredCamera.add(playerGroup.position);
 
-    camera.position.lerp(
-        desired,
-        0.12
-    );
+  camera.position.lerp(
+    desiredCamera,
+    0.10
+  );
 
-    const lookTarget =
-        new THREE.Vector3(
-            target.x,
-            target.y + 28,
-            target.z
-        );
+  cameraLook.set(
+    playerGroup.position.x,
+    playerGroup.position.y + 1.4,
+    playerGroup.position.z
+  );
 
-    camera.lookAt(lookTarget);
+  camera.lookAt(cameraLook);
 }
 
-/* =========================
-   PLAYER MOVEMENT
-========================= */
+// ======================================================
+// KEYBOARD
+// ======================================================
 
-function movePlayer() {
+window.addEventListener("keydown", function(e) {
 
-    if (playerMode !== "walking")
-        return;
+  if (
+    e.key === "ArrowUp" ||
+    e.key === "w" ||
+    e.key === "W"
+  ) {
+    keys.up = true;
+  }
 
-    let dx = 0;
-    let dz = 0;
+  if (
+    e.key === "ArrowDown" ||
+    e.key === "s" ||
+    e.key === "S"
+  ) {
+    keys.down = true;
+  }
 
-    if (keys.up)
-        dz -= playerSpeed;
+  if (
+    e.key === "ArrowLeft" ||
+    e.key === "a" ||
+    e.key === "A"
+  ) {
+    keys.left = true;
+  }
 
-    if (keys.down)
-        dz += playerSpeed;
+  if (
+    e.key === "ArrowRight" ||
+    e.key === "d" ||
+    e.key === "D"
+  ) {
+    keys.right = true;
+  }
 
-    if (keys.left)
-        dx -= playerSpeed;
+  if (
+    e.key === "Shift"
+  ) {
+    keys.run = true;
+  }
 
-    if (keys.right)
-        dx += playerSpeed;
+});
 
-    if (dx !== 0 || dz !== 0) {
+window.addEventListener("keyup", function(e) {
 
-        const length =
-            Math.sqrt(dx * dx + dz * dz);
+  if (
+    e.key === "ArrowUp" ||
+    e.key === "w" ||
+    e.key === "W"
+  ) {
+    keys.up = false;
+  }
 
-        dx /= length;
-        dz /= length;
+  if (
+    e.key === "ArrowDown" ||
+    e.key === "s" ||
+    e.key === "S"
+  ) {
+    keys.down = false;
+  }
 
-        playerGroup.position.x +=
-            dx * playerSpeed;
+  if (
+    e.key === "ArrowLeft" ||
+    e.key === "a" ||
+    e.key === "A"
+  ) {
+    keys.left = false;
+  }
 
-        playerGroup.position.z +=
-            dz * playerSpeed;
+  if (
+    e.key === "ArrowRight" ||
+    e.key === "d" ||
+    e.key === "D"
+  ) {
+    keys.right = false;
+  }
 
-        playerGroup.position.x =
-            Math.max(
-                -WORLD_W / 2 + 25,
-                Math.min(
-                    WORLD_W / 2 - 25,
-                    playerGroup.position.x
-                )
-            );
+  if (
+    e.key === "Shift"
+  ) {
+    keys.run = false;
+  }
 
-        playerGroup.position.z =
-            Math.max(
-                -WORLD_H / 2 + 25,
-                Math.min(
-                    WORLD_H / 2 - 25,
-                    playerGroup.position.z
-                )
-            );
+});
 
-        /*
-           Character always faces camera.
-        */
+// ======================================================
+// MOBILE BUTTONS
+// ======================================================
 
-        playerMesh.rotation.y =
-            Math.atan2(
-                camera.position.x -
-                playerGroup.position.x,
+function bindButton(id, key) {
 
-                camera.position.z -
-                playerGroup.position.z
-            );
-    }
+  const button = document.getElementById(id);
+
+  if (!button) return;
+
+  button.addEventListener("touchstart", function(e) {
+    e.preventDefault();
+    keys[key] = true;
+  }, { passive: false });
+
+  button.addEventListener("touchend", function(e) {
+    e.preventDefault();
+    keys[key] = false;
+  }, { passive: false });
+
+  button.addEventListener("touchcancel", function() {
+    keys[key] = false;
+  });
+
+  button.addEventListener("mousedown", function() {
+    keys[key] = true;
+  });
+
+  button.addEventListener("mouseup", function() {
+    keys[key] = false;
+  });
+
+  button.addEventListener("mouseleave", function() {
+    keys[key] = false;
+  });
 }
 
-/* =========================
-   TRUCK MOVEMENT
-========================= */
+bindButton("upBtn", "up");
+bindButton("downBtn", "down");
+bindButton("leftBtn", "left");
+bindButton("rightBtn", "right");
+bindButton("runBtn", "run");
 
-function moveTruck() {
+// ======================================================
+// PLAYER MOVEMENT
+// ======================================================
 
-    if (playerMode !== "driving")
-        return;
+let moving = false;
+let walkTime = 0;
 
-    let dx = 0;
-    let dz = 0;
+function updatePlayer() {
 
-    if (keys.up)
-        dz -= truckSpeed;
+  let dx = 0;
+  let dz = 0;
 
-    if (keys.down)
-        dz += truckSpeed;
+  if (keys.up) dz -= 1;
+  if (keys.down) dz += 1;
+  if (keys.left) dx -= 1;
+  if (keys.right) dx += 1;
 
-    if (keys.left)
-        dx -= truckSpeed;
+  const length = Math.sqrt(
+    dx * dx + dz * dz
+  );
 
-    if (keys.right)
-        dx += truckSpeed;
+  moving = length > 0;
 
-    if (dx !== 0 || dz !== 0) {
+  if (!moving) {
 
-        const length =
-            Math.sqrt(dx * dx + dz * dz);
+    leftLeg.rotation.x = THREE.MathUtils.lerp(
+      leftLeg.rotation.x,
+      0,
+      0.20
+    );
 
-        dx /= length;
-        dz /= length;
+    rightLeg.rotation.x = THREE.MathUtils.lerp(
+      rightLeg.rotation.x,
+      0,
+      0.20
+    );
 
-        truckGroup.position.x +=
-            dx * truckSpeed;
+    leftArm.rotation.x = THREE.MathUtils.lerp(
+      leftArm.rotation.x,
+      0,
+      0.20
+    );
 
-        truckGroup.position.z +=
-            dz * truckSpeed;
+    rightArm.rotation.x = THREE.MathUtils.lerp(
+      rightArm.rotation.x,
+      0,
+      0.20
+    );
 
-        /*
-           Truck turns toward movement direction.
-        */
+    return;
+  }
 
-        truckGroup.rotation.y =
-            Math.atan2(dx, dz);
+  dx /= length;
+  dz /= length;
 
-        /*
-           Fuel consumption
-        */
+  const speed = keys.run
+    ? player.runSpeed
+    : player.speed;
 
-        fuel -= 0.003;
+  playerGroup.position.x += dx * speed;
+  playerGroup.position.z += dz * speed;
 
-        if (fuel < 0)
-            fuel = 0;
+  // Face movement direction
+  const targetRotation = Math.atan2(
+    dx,
+    dz
+  );
 
-        document.getElementById("fuel")
-            .textContent = Math.round(fuel);
+  playerGroup.rotation.y = THREE.MathUtils.lerp(
+    playerGroup.rotation.y,
+    targetRotation,
+    0.18
+  );
 
-        localStorage.setItem(
-            "td_fuel",
-            fuel
-        );
-    }
+  // Walking animation
+  walkTime += keys.run ? 0.25 : 0.18;
+
+  const swing = Math.sin(walkTime) * 0.45;
+
+  leftLeg.rotation.x = swing;
+  rightLeg.rotation.x = -swing;
+
+  leftArm.rotation.x = -swing;
+  rightArm.rotation.x = swing;
 }
 
-/* =========================
-   DISTANCE
-========================= */
+// ======================================================
+// MAP BOUNDARY
+// ======================================================
 
-function distanceBetween(a, b) {
+function keepPlayerInsideMap() {
 
-    const dx =
-        a.x - b.x;
+  playerGroup.position.x = THREE.MathUtils.clamp(
+    playerGroup.position.x,
+    -740,
+    740
+  );
 
-    const dz =
-        a.z - b.z;
-
-    return Math.sqrt(
-        dx * dx + dz * dz
-    );
+  playerGroup.position.z = THREE.MathUtils.clamp(
+    playerGroup.position.z,
+    -490,
+    490
+  );
 }
 
-/* =========================
-   LOCATION SYSTEM
-========================= */
-
-const locations = {
-
-    showroom: {
-        name: "🏪 Showroom",
-        x: -120,
-        z: 180,
-        radius: 130
-    },
-
-    market: {
-        name: "🚚 Truck Market",
-        x: 260,
-        z: 40,
-        radius: 130
-    },
-
-    garage: {
-        name: "🔧 Garage",
-        x: 390,
-        z: -260,
-        radius: 130
-    },
-
-    workers: {
-        name: "👷 Worker Office",
-        x: -330,
-        z: -250,
-        radius: 130
-    }
-};
-
-function checkLocation() {
-
-    let current = null;
-
-    const position =
-        playerMode === "driving"
-            ? truckGroup.position
-            : playerGroup.position;
-
-    for (const key in locations) {
-
-        const loc =
-            locations[key];
-
-        const d =
-            distanceBetween(
-                position,
-                loc
-            );
-
-        if (d < loc.radius) {
-            current = key;
-            break;
-        }
-    }
-
-    if (current) {
-
-        document.getElementById(
-            "locationBox"
-        ).textContent =
-            locations[current].name;
-
-        showLocationMessage(
-            current
-        );
-
-    } else {
-
-        document.getElementById(
-            "locationBox"
-        ).textContent =
-            playerMode === "driving"
-                ? "🛣️ Road"
-                : "🚶 Road";
-
-        document.getElementById(
-            "actionButton"
-        ).style.display =
-            "none";
-    }
-}
-
-/* =========================
-   LOCATION MESSAGE
-========================= */
-
-function showLocationMessage(location) {
-
-    const message =
-        document.getElementById(
-            "message"
-        );
-
-    const button =
-        document.getElementById(
-            "actionButton"
-        );
-
-    if (location === "showroom") {
-
-        message.textContent =
-            "🏪 Showroom — এখান থেকেই গেম শুরু হয়েছে";
-
-        if (playerMode === "walking") {
-
-            button.style.display =
-                "block";
-
-            button.textContent =
-                "🚛 ট্রাকে উঠুন";
-
-            button.onclick =
-                enterTruck;
-        }
-    }
-
-    if (location === "market") {
-
-        message.textContent =
-            "🚚 Truck Market — নতুন ট্রাক কিনতে পারবেন";
-
-        if (playerMode === "walking") {
-
-            button.style.display =
-                "block";
-
-            button.textContent =
-                "🛒 Market";
-
-            button.onclick =
-                buyTruck;
-        }
-    }
-
-    if (location === "garage") {
-
-        message.textContent =
-            "🔧 Garage — ট্রাক সার্ভিস ও মেরামত";
-
-        if (playerMode === "walking") {
-
-            button.style.display =
-                "block";
-
-            button.textContent =
-                "🔧 Garage";
-
-            button.onclick =
-                repairTruck;
-        }
-    }
-
-    if (location === "workers") {
-
-        message.textContent =
-            "👷 Worker Office — কর্মী নিয়োগ করুন";
-
-        if (playerMode === "walking") {
-
-            button.style.display =
-                "block";
-
-            button.textContent =
-                "👷 Hire Worker";
-
-            button.onclick =
-                hireWorker;
-        }
-    }
-}
-
-/* =========================
-   ENTER TRUCK
-========================= */
-
-function enterTruck() {
-
-    const d =
-        distanceBetween(
-            playerGroup.position,
-            truckGroup.position
-        );
-
-    if (d > 90) {
-
-        document.getElementById(
-            "message"
-        ).textContent =
-            "🚛 ট্রাকের কাছে যান";
-
-        return;
-    }
-
-    playerMode = "driving";
-
-    playerGroup.visible = false;
-
-    document.getElementById(
-        "message"
-    ).textContent =
-        "🚛 আপনি ট্রাকে উঠেছেন — গাড়ি চালাতে ▲ চাপুন";
-
-    document.getElementById(
-        "actionButton"
-    ).style.display =
-        "block";
-
-    document.getElementById(
-        "actionButton"
-    ).textContent =
-        "🚶 ট্রাক থেকে নামুন";
-
-    document.getElementById(
-        "actionButton"
-    ).onclick =
-        exitTruck;
-}
-
-/* =========================
-   EXIT TRUCK
-========================= */
-
-function exitTruck() {
-
-    playerMode = "walking";
-
-    playerGroup.visible = true;
-
-    /*
-       Player appears beside truck.
-    */
-
-    playerGroup.position.set(
-        truckGroup.position.x + 65,
-        0,
-        truckGroup.position.z
-    );
-
-    document.getElementById(
-        "message"
-    ).textContent =
-        "🚶 আপনি ট্রাক থেকে নেমেছেন";
-
-    document.getElementById(
-        "actionButton"
-    ).style.display =
-        "none";
-}
-
-/* =========================
-   BUY TRUCK
-========================= */
-
-function buyTruck() {
-
-    const price = 180000;
-
-    if (money < price) {
-
-        document.getElementById(
-            "message"
-        ).textContent =
-            "❌ এই ট্রাক কেনার জন্য টাকা কম";
-
-        return;
-    }
-
-    money -= price;
-
-    truckName = "Heavy Truck";
-
-    document.getElementById(
-        "money"
-    ).textContent =
-        money.toLocaleString();
-
-    document.getElementById(
-        "truckName"
-    ).textContent =
-        truckName;
-
-    localStorage.setItem(
-        "td_money",
-        money
-    );
-
-    localStorage.setItem(
-        "td_truck",
-        truckName
-    );
-
-    document.getElementById(
-        "message"
-    ).textContent =
-        "✅ নতুন Heavy Truck কেনা হয়েছে!";
-
-    /*
-       Change truck colour.
-    */
-
-    truckBodyMaterial.color.set(
-        0xc62828
-    );
-
-    cabinMaterial.color.set(
-        0xd32f2f
-    );
-}
-
-/* =========================
-   GARAGE
-========================= */
-
-function repairTruck() {
-
-    const repairCost = 25000;
-
-    if (fuel >= 99) {
-
-        document.getElementById(
-            "message"
-        ).textContent =
-            "🔧 ট্রাক ইতিমধ্যে ভালো অবস্থায় আছে";
-
-        return;
-    }
-
-    if (money < repairCost) {
-
-        document.getElementById(
-            "message"
-        ).textContent =
-            "❌ Garage service-এর জন্য টাকা কম";
-
-        return;
-    }
-
-    money -= repairCost;
-    fuel = 100;
-
-    document.getElementById(
-        "money"
-    ).textContent =
-        money.toLocaleString();
-
-    document.getElementById(
-        "fuel"
-    ).textContent =
-        fuel;
-
-    localStorage.setItem(
-        "td_money",
-        money
-    );
-
-    localStorage.setItem(
-        "td_fuel",
-        fuel
-    );
-
-    document.getElementById(
-        "message"
-    ).textContent =
-        "✅ ট্রাক সম্পূর্ণ সার্ভিস করা হয়েছে";
-}
-
-/* =========================
-   WORKER
-========================= */
-
-let workers =
-    Number(
-        localStorage.getItem(
-            "td_workers"
-        )
-    ) || 0;
-
-function hireWorker() {
-
-    const price = 50000;
-
-    if (money < price) {
-
-        document.getElementById(
-            "message"
-        ).textContent =
-            "❌ Worker hire করার জন্য টাকা কম";
-
-        return;
-    }
-
-    money -= price;
-    workers++;
-
-    document.getElementById(
-        "money"
-    ).textContent =
-        money.toLocaleString();
-
-    localStorage.setItem(
-        "td_money",
-        money
-    );
-
-    localStorage.setItem(
-        "td_workers",
-        workers
-    );
-
-    document.getElementById(
-        "message"
-    ).textContent =
-        "✅ Worker hired! মোট Worker: " +
-        workers;
-}
-
-/* =========================
-   BUTTON CONTROL
-========================= */
-
-function holdButton(id, key) {
-
-    const button =
-        document.getElementById(id);
-
-    const start = (e) => {
-
-        e.preventDefault();
-
-        keys[key] = true;
-    };
-
-    const end = (e) => {
-
-        e.preventDefault();
-
-        keys[key] = false;
-    };
-
-    button.addEventListener(
-        "touchstart",
-        start,
-        { passive: false }
-    );
-
-    button.addEventListener(
-        "touchend",
-        end,
-        { passive: false }
-    );
-
-    button.addEventListener(
-        "touchcancel",
-        end,
-        { passive: false }
-    );
-
-    button.addEventListener(
-        "mousedown",
-        start
-    );
-
-    button.addEventListener(
-        "mouseup",
-        end
-    );
-
-    button.addEventListener(
-        "mouseleave",
-        end
-    );
-}
-
-holdButton("up", "up");
-holdButton("down", "down");
-holdButton("left", "left");
-holdButton("right", "right");
-
-/* =========================
-   RUN BUTTON
-========================= */
-
-const runButton =
-    document.getElementById(
-        "runButton"
-    );
-
-let running = false;
-
-runButton.addEventListener(
-    "touchstart",
-    (e) => {
-
-        e.preventDefault();
-
-        running = true;
-        playerSpeed = 3.2;
-    },
-    { passive: false }
+// ======================================================
+// SHOWROOM MARKER
+// ======================================================
+
+const markerMaterial = new THREE.MeshStandardMaterial({
+  color: 0xffc107,
+  emissive: 0x664400
+});
+
+const markerGeometry = new THREE.CylinderGeometry(
+  1.3,
+  1.3,
+  0.08,
+  32
 );
 
-runButton.addEventListener(
-    "touchend",
-    () => {
-
-        running = false;
-        playerSpeed = 1.6;
-    }
+const showroomMarker = new THREE.Mesh(
+  markerGeometry,
+  markerMaterial
 );
 
-/* =========================
-   TRUCK BUTTON
-========================= */
-
-document.getElementById(
-    "truckButton"
-).addEventListener(
-    "click",
-    () => {
-
-        if (playerMode === "walking") {
-
-            enterTruck();
-
-        } else {
-
-            exitTruck();
-
-        }
-    }
+showroomMarker.position.set(
+  0,
+  0.04,
+  -2
 );
 
-/* =========================
-   HAND BUTTON
-========================= */
+scene.add(showroomMarker);
 
-document.getElementById(
-    "handButton"
-).addEventListener(
-    "click",
-    () => {
+// ======================================================
+// HUD
+// ======================================================
 
-        document.getElementById(
-            "message"
-        ).textContent =
-            "✋ Interaction";
+function updateHUD() {
 
-        checkLocation();
-    }
-);
+  const moneyElement =
+    document.getElementById("money");
 
-/* =========================
-   KEYBOARD
-========================= */
+  const fuelElement =
+    document.getElementById("fuel");
 
-window.addEventListener(
-    "keydown",
-    (e) => {
+  if (moneyElement) {
+    moneyElement.textContent =
+      money.toLocaleString("en-US");
+  }
 
-        if (
-            e.key === "ArrowUp" ||
-            e.key.toLowerCase() === "w"
-        )
-            keys.up = true;
-
-        if (
-            e.key === "ArrowDown" ||
-            e.key.toLowerCase() === "s"
-        )
-            keys.down = true;
-
-        if (
-            e.key === "ArrowLeft" ||
-            e.key.toLowerCase() === "a"
-        )
-            keys.left = true;
-
-        if (
-            e.key === "ArrowRight" ||
-            e.key.toLowerCase() === "d"
-        )
-            keys.right = true;
-
-        if (e.key === "e")
-            enterTruck();
-    }
-);
-
-window.addEventListener(
-    "keyup",
-    (e) => {
-
-        if (
-            e.key === "ArrowUp" ||
-            e.key.toLowerCase() === "w"
-        )
-            keys.up = false;
-
-        if (
-            e.key === "ArrowDown" ||
-            e.key.toLowerCase() === "s"
-        )
-            keys.down = false;
-
-        if (
-            e.key === "ArrowLeft" ||
-            e.key.toLowerCase() === "a"
-        )
-            keys.left = false;
-
-        if (
-            e.key === "ArrowRight" ||
-            e.key.toLowerCase() === "d"
-        )
-            keys.right = false;
-    }
-);
-
-/* =========================
-   RESIZE
-========================= */
-
-window.addEventListener(
-    "resize",
-    () => {
-
-        camera.aspect =
-            window.innerWidth /
-            window.innerHeight;
-
-        camera.updateProjectionMatrix();
-
-        renderer.setSize(
-            window.innerWidth,
-            window.innerHeight
-        );
-    }
-);
-
-/* =========================
-   GAME LOOP
-========================= */
-
-function gameLoop() {
-
-    requestAnimationFrame(
-        gameLoop
-    );
-
-    movePlayer();
-    moveTruck();
-
-    checkLocation();
-    updateCamera();
-
-    renderer.render(
-        scene,
-        camera
-    );
+  if (fuelElement) {
+    fuelElement.textContent =
+      Math.round(fuel) + "%";
+  }
 }
 
-/* =========================
-   INITIAL CAMERA
-========================= */
+updateHUD();
+
+// ======================================================
+// RESIZE
+// ======================================================
+
+window.addEventListener("resize", function() {
+
+  camera.aspect =
+    window.innerWidth /
+    window.innerHeight;
+
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+  );
+
+});
+
+// ======================================================
+// START CAMERA
+// ======================================================
 
 camera.position.set(
-    playerGroup.position.x,
-    58,
-    playerGroup.position.z + 95
+  0,
+  3.8,
+  6.8
 );
 
 camera.lookAt(
-    playerGroup.position.x,
-    28,
-    playerGroup.position.z
+  0,
+  1.4,
+  0
 );
 
-/* =========================
-   START
-========================= */
+// ======================================================
+// GAME LOOP
+// ======================================================
 
-document.getElementById(
-    "message"
-).textContent =
-    "🏪 Showroom থেকে গেম শুরু হয়েছে — Character-কে হাঁটান";
+function gameLoop() {
+
+  requestAnimationFrame(gameLoop);
+
+  updatePlayer();
+  keepPlayerInsideMap();
+  updateCamera();
+
+  renderer.render(
+    scene,
+    camera
+  );
+}
 
 gameLoop();
