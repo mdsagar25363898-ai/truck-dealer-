@@ -1,233 +1,297 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  -webkit-tap-highlight-color:transparent;
 }
 
-html,
-body {
-  width: 100%;
-  height: 100%;
-
-  overflow: hidden;
-
-  background: #111;
-
-  font-family: Arial, sans-serif;
+html,body{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#111;
+  font-family:Arial,sans-serif;
 }
 
-body {
-  touch-action: none;
+#game{
+  position:relative;
+  width:100vw;
+  height:100vh;
+  overflow:hidden;
+  background:#111;
 }
 
-#game {
-  position: fixed;
-
-  left: 0;
-  top: 0;
-
-  width: 100%;
-  height: 100%;
-
-  overflow: hidden;
+canvas{
+  position:absolute;
+  left:0;
+  top:0;
+  width:100%;
+  height:100%;
+  display:block;
+  touch-action:none;
 }
 
-#canvas {
-  position: absolute;
+/* HUD */
 
-  left: 0;
-  top: 0;
-
-  width: 100%;
-  height: 100%;
-
-  display: block;
+.hud{
+  position:absolute;
+  top:12px;
+  left:0;
+  width:100%;
+  display:flex;
+  justify-content:space-around;
+  gap:8px;
+  padding:0 10px;
+  z-index:10;
+  pointer-events:none;
 }
 
-#hud {
-  position: absolute;
-
-  left: 10px;
-  right: 10px;
-  top: 10px;
-
-  display: flex;
-  justify-content: space-between;
-
-  gap: 6px;
-
-  z-index: 20;
-
-  pointer-events: none;
+.hudBox{
+  background:rgba(0,0,0,.82);
+  color:white;
+  border-radius:14px;
+  padding:12px 14px;
+  font-size:16px;
+  font-weight:bold;
+  min-width:105px;
+  text-align:center;
+  box-shadow:0 3px 10px rgba(0,0,0,.4);
 }
 
-#hud div {
-  background: rgba(0,0,0,.82);
+/* LOCATION */
 
-  color: white;
-
-  padding: 9px 11px;
-
-  border-radius: 11px;
-
-  font-size: 13px;
-
-  font-weight: bold;
-
-  white-space: nowrap;
+#location{
+  position:absolute;
+  top:70px;
+  right:12px;
+  background:rgba(0,0,0,.8);
+  color:white;
+  padding:10px 15px;
+  border-radius:20px;
+  font-weight:bold;
+  z-index:10;
 }
 
-#message {
-  position: absolute;
+/* MESSAGE */
 
-  left: 50%;
-  top: 65px;
-
-  transform: translateX(-50%);
-
-  width: 92%;
-
-  text-align: center;
-
-  color: white;
-
-  font-size: 15px;
-
-  font-weight: bold;
-
-  text-shadow:
-    0 2px 4px #000;
-
-  z-index: 20;
-
-  pointer-events: none;
+#message{
+  position:absolute;
+  top:70px;
+  left:50%;
+  transform:translateX(-50%);
+  width:65%;
+  max-width:520px;
+  text-align:center;
+  color:white;
+  background:rgba(0,0,0,.72);
+  padding:9px 12px;
+  border-radius:15px;
+  font-weight:bold;
+  z-index:10;
 }
 
-#actionBtn {
-  display: none;
+/* ACTION */
 
-  position: absolute;
-
-  left: 50%;
-  bottom: 180px;
-
-  transform: translateX(-50%);
-
-  border: none;
-
-  background: #ffb300;
-
-  color: #111;
-
-  padding: 14px 22px;
-
-  border-radius: 15px;
-
-  font-size: 16px;
-
-  font-weight: bold;
-
-  box-shadow:
-    0 5px 12px rgba(0,0,0,.45);
-
-  z-index: 30;
-
-  touch-action: manipulation;
+.action{
+  position:absolute;
+  left:50%;
+  bottom:145px;
+  transform:translateX(-50%);
+  background:#ffb300;
+  color:#111;
+  border:0;
+  border-radius:16px;
+  padding:16px 25px;
+  font-size:18px;
+  font-weight:bold;
+  z-index:20;
+  box-shadow:0 5px 15px rgba(0,0,0,.4);
 }
 
-#controls {
-  position: absolute;
-
-  left: 18px;
-  bottom: 25px;
-
-  width: 170px;
-  height: 150px;
-
-  z-index: 30;
+.hidden{
+  display:none!important;
 }
 
-.control {
-  position: absolute;
+/* MODE */
 
-  width: 55px;
-  height: 55px;
-
-  border-radius: 15px;
-
-  border: 2px solid white;
-
-  background: rgba(0,0,0,.78);
-
-  color: white;
-
-  font-size: 26px;
-
-  font-weight: bold;
-
-  touch-action: none;
+.modeBtn{
+  position:absolute;
+  right:15px;
+  bottom:25px;
+  z-index:20;
+  border:2px solid white;
+  border-radius:16px;
+  background:rgba(0,0,0,.8);
+  color:white;
+  padding:13px 18px;
+  font-weight:bold;
+  font-size:15px;
 }
 
-.control:active {
-  background: #ff9800;
+/* CONTROLS */
 
-  color: black;
-
-  transform: scale(.94);
+.controls{
+  position:absolute;
+  left:25px;
+  bottom:22px;
+  width:185px;
+  height:160px;
+  z-index:20;
 }
 
-.up {
-  left: 57px;
-  top: 0;
+.control{
+  position:absolute;
+  width:62px;
+  height:62px;
+  border-radius:18px;
+  border:2px solid white;
+  background:rgba(0,0,0,.78);
+  color:white;
+  font-size:27px;
+  font-weight:bold;
+  box-shadow:0 4px 10px rgba(0,0,0,.4);
 }
 
-.left {
-  left: 0;
-  top: 62px;
+.control:active{
+  transform:scale(.9);
+  background:#333;
 }
 
-.down {
-  left: 57px;
-  top: 62px;
+.up{
+  left:62px;
+  top:0;
 }
 
-.right {
-  left: 114px;
-  top: 62px;
+.left{
+  left:0;
+  top:70px;
 }
 
-#mode {
-  position: absolute;
-
-  right: 12px;
-  bottom: 30px;
-
-  padding: 10px 13px;
-
-  border-radius: 11px;
-
-  background: rgba(0,0,0,.8);
-
-  color: white;
-
-  font-size: 13px;
-
-  font-weight: bold;
-
-  z-index: 30;
+.down{
+  left:62px;
+  top:70px;
 }
 
-@media (min-width: 700px) {
+.right{
+  left:124px;
+  top:70px;
+}
 
-  #controls {
-    left: 30px;
-    bottom: 30px;
+/* PANELS */
+
+.panel{
+  position:absolute;
+  inset:0;
+  z-index:50;
+  background:rgba(0,0,0,.7);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+
+.panelBox{
+  position:relative;
+  width:min(94vw,500px);
+  max-height:90vh;
+  overflow:auto;
+  background:#f5f5f5;
+  border-radius:22px;
+  padding:22px;
+  color:#111;
+}
+
+.panelBox h2{
+  text-align:center;
+  margin-bottom:10px;
+}
+
+.panelBox p{
+  text-align:center;
+  margin-bottom:15px;
+}
+
+.close{
+  position:absolute;
+  right:12px;
+  top:12px;
+  width:38px;
+  height:38px;
+  border:0;
+  border-radius:50%;
+  background:#222;
+  color:white;
+  font-size:20px;
+}
+
+.truckCard{
+  background:white;
+  border-radius:15px;
+  padding:15px;
+  margin:10px 0;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+
+.truckCard button,
+.sellBox button,
+.bigBtn{
+  width:100%;
+  border:0;
+  border-radius:12px;
+  padding:13px;
+  margin-top:8px;
+  background:#168a3a;
+  color:white;
+  font-size:16px;
+  font-weight:bold;
+}
+
+.sellBox{
+  background:#fff2cc;
+  padding:15px;
+  border-radius:15px;
+  margin-top:12px;
+}
+
+.sellBox button{
+  background:#c62828;
+}
+
+.garageInfo{
+  background:white;
+  border-radius:15px;
+  padding:20px;
+  text-align:center;
+  margin:15px 0;
+}
+
+.bigBtn{
+  background:#1565c0;
+}
+
+/* MOBILE */
+
+@media(max-width:600px){
+
+  .hudBox{
+    font-size:14px;
+    padding:10px 8px;
+    min-width:90px;
   }
 
-  #actionBtn {
-    bottom: 150px;
+  #location{
+    top:65px;
+    font-size:13px;
   }
+
+  #message{
+    top:105px;
+    width:90%;
+    font-size:14px;
+  }
+
+  .action{
+    bottom:180px;
+  }
+
 }
