@@ -1,3 +1,5 @@
+const playerCharacter = new Image();
+playerCharacter.src = "player-sheet.png";
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
